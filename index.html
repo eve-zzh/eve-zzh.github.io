@@ -1,1 +1,42 @@
-<h1>Hello World, this is my Vibe Coding site!</h1>
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <title>Dangezhang | Blog</title>
+    <style>
+        body {
+            background-color: #fff;
+            color: #000;
+            font-family: "Georgia", serif; /* 使用衬线体更有书卷气 */
+            max-width: 600px;
+            margin: 100px auto;
+            padding: 0 20px;
+            line-height: 1.6;
+        }
+        header { border-bottom: 2px solid #000; padding-bottom: 20px; margin-bottom: 50px; }
+        h1 { font-size: 1.5rem; letter-spacing: 2px; text-transform: uppercase; }
+        .post-item { margin-bottom: 30px; display: flex; justify-content: space-between; align-items: baseline; }
+        .post-item a { color: #000; text-decoration: none; border-bottom: 1px solid transparent; transition: 0.3s; }
+        .post-item a:hover { border-bottom: 1px solid #000; }
+        .date { font-size: 0.8rem; color: #666; font-style: italic; }
+        footer { margin-top: 100px; font-size: 0.7rem; color: #999; text-align: center; }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Dangezhang's Journal</h1>
+        <p>思考、代码与生活。</p>
+    </header>
+    <div class="post-list">
+        <div class="post-item">
+            <a href="projects/word-tree.html">词汇成长树项目总结</a>
+            <span class="date">2026.04.16</span>
+        </div>
+        <div class="post-item">
+            <a href="#">我的第一篇 Vibe Coding 日记</a>
+            <span class="date">2026.04.10</span>
+        </div>
+    </div>
+    <footer>© 2026 DANGEZHANG. ALL RIGHTS RESERVED.</footer>
+</body>
+</html>
