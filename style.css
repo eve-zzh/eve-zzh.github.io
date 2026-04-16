@@ -27,11 +27,11 @@ h1 { font-size: 3.5rem; font-weight: 900; margin: 0; letter-spacing: -2px; }
 .role { font-size: 1.1rem; color: var(--secondary); margin-top: 10px; font-weight: 400; }
 
 .grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 40px;
+    display: flex;          /* 从 grid 改为 flex */
+    flex-direction: column; /* 强制竖向排列 */
+    gap: 40px;              /* 保持间距 */
+    max-width: 500px;       /* 限制宽度，防止长句子在大屏上太散 */
 }
-
 .module-label {
     font-size: 0.7rem;
     letter-spacing: 2px;
