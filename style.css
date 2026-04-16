@@ -1,0 +1,39 @@
+.grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); /* 响应式布局，手机端自动堆叠 */
+    gap: 40px;
+    margin-top: 60px;
+}
+
+.project-card {
+    border-top: 1px solid #eee; /* 淡淡的分割线 */
+    padding-top: 20px;
+}
+
+.module-label {
+    font-size: 0.7rem;
+    letter-spacing: 1px;
+    color: #999;
+    text-transform: uppercase;
+    display: block;
+    margin-bottom: 10px;
+}
+
+.nav-link {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #000;
+    text-decoration: none;
+    display: block;
+}
+
+.nav-link:hover {
+    text-decoration: underline;
+}
+
+.desc {
+    font-size: 0.85rem;
+    color: #666;
+    margin-top: 8px;
+    line-height: 1.5;
+}
