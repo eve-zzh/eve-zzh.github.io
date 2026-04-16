@@ -2,46 +2,63 @@
 <html lang="zh">
 <head>
     <meta charset="UTF-8">
-    <title>Eve | Journal</title>
+    <title>Eve | Portfolio</title>
     <style>
         body {
             background-color: #fff;
-            color: #000;
-            font-family: "Georgia", serif; /* 经典的衬线体，更有质感 */
-            max-width: 600px;
-            margin: 100px auto;
-            padding: 0 20px;
+            color: #1a1a1a;
+            font-family: -apple-system, "Helvetica Neue", "Arial", sans-serif;
+            max-width: 700px;
+            margin: 80px auto;
+            padding: 0 40px;
             line-height: 1.6;
         }
-        header { border-bottom: 2px solid #000; padding-bottom: 20px; margin-bottom: 50px; }
-        h1 { font-size: 1.5rem; letter-spacing: 2px; text-transform: uppercase; margin: 0; }
-        p.subtitle { color: #666; font-size: 0.9rem; margin-top: 5px; }
-        .post-list { margin-top: 20px; }
-        .post-item { margin-bottom: 30px; display: flex; justify-content: space-between; align-items: baseline; }
-        .post-item a { color: #000; text-decoration: none; border-bottom: 1px solid transparent; transition: 0.3s; font-weight: bold; }
-        .post-item a:hover { border-bottom: 1px solid #000; }
-        .date { font-size: 0.8rem; color: #999; font-style: italic; }
-        footer { margin-top: 100px; font-size: 0.7rem; color: #bbb; text-align: center; letter-spacing: 1px; }
+        header { border-bottom: 3px solid #000; padding-bottom: 30px; margin-bottom: 60px; }
+        h1 { font-size: 2rem; font-weight: 800; letter-spacing: -1px; margin: 0; text-transform: uppercase; }
+        .subtitle { color: #666; font-size: 1rem; margin-top: 10px; font-weight: 400; }
+        
+        .section-title { font-size: 0.8rem; font-weight: 700; color: #999; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 30px; }
+        
+        .project-item { margin-bottom: 40px; display: block; text-decoration: none; color: inherit; transition: 0.2s; }
+        .project-header { display: flex; justify-content: space-between; align-items: baseline; }
+        .project-title { font-size: 1.2rem; font-weight: 700; border-bottom: 2px solid transparent; transition: 0.3s; }
+        .project-item:hover .project-title { border-bottom: 2px solid #000; }
+        .project-tag { font-size: 0.7rem; color: #fff; background: #000; padding: 2px 8px; border-radius: 3px; vertical-align: middle; margin-left: 10px; }
+        .project-desc { font-size: 0.9rem; color: #555; margin-top: 8px; }
+        .date { font-family: "Georgia", serif; font-size: 0.85rem; color: #bbb; font-style: italic; }
+        
+        footer { margin-top: 120px; padding-top: 20px; border-top: 1px solid #eee; font-size: 0.75rem; color: #aaa; display: flex; justify-content: space-between; }
     </style>
 </head>
 <body>
     <header>
-        <h1>Eve's Journal</h1>
-        <p class="subtitle">思考、代码与生活。</p>
+        <h1>Eve's Portfolio</h1>
+        <p class="subtitle">后端开发工程师 / 专注于 Go 语言与自动化架构</p>
     </header>
 
-    <div class="post-list">
-        <div class="post-item">
-            <a href="projects/word-tree.html">词汇成长树项目总结</a>
-            <span class="date">2026.04.16</span>
-        </div>
-        
-        <div class="post-item">
-            <a href="#">我的第一篇 Vibe Coding 日记</a>
-            <span class="date">2026.04.10</span>
-        </div>
+    <div class="section-title">Selected Projects / 精选项目</div>
+
+    <div class="project-list">
+        <a href="word-tree.html" class="project-item">
+            <div class="project-header">
+                <span class="project-title">词汇成长树交互系统 <span class="project-tag">Frontend</span></span>
+                <span class="date">2026.04</span>
+            </div>
+            <p class="project-desc">基于原生 JavaScript 开发的视觉交互实验，通过生长算法模拟词汇积累过程，探索艺术与代码的结合。</p>
+        </a>
+
+        <a href="https://github.com/eve-zzh/new-api" class="project-item">
+            <div class="project-header">
+                <span class="project-title">New-API 后端中转服务 <span class="project-tag">Golang</span></span>
+                <span class="date">In Progress</span>
+            </div>
+            <p class="project-desc">高性能 API 聚合与转发引擎。采用 Go 语言构建，支持多协议接入、流控管理及自动化运维部署。</p>
+        </a>
     </div>
 
-    <footer>© 2026 EVE. ALL RIGHTS RESERVED.</footer>
+    <footer>
+        <span>© 2026 EVE. BUILT WITH VIBE CODING.</span>
+        <span>GITHUB / EVE-ZZH</span>
+    </footer>
 </body>
 </html>
