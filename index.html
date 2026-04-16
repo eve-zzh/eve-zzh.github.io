@@ -2,56 +2,91 @@
 <html lang="zh">
 <head>
     <meta charset="UTF-8">
-    <title>Eve | Profile</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Eve | Product Manager & Developer</title>
     <style>
+        :root {
+            --primary: #000;
+            --secondary: #666;
+            --bg: #fff;
+        }
         body {
-            background-color: #fff;
-            color: #000;
-            font-family: -apple-system, "Inter", sans-serif;
+            background-color: var(--bg);
+            color: var(--primary);
+            font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+            margin: 0;
             display: flex;
-            flex-direction: column;
-            justify-content: center;
-            height: 90vh; /* 让内容垂直居中 */
-            max-width: 600px;
+            align-items: center;
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 800px;
             margin: 0 auto;
-            padding: 0 40px;
+            padding: 40px;
         }
-
-        h1 { font-size: 4rem; font-weight: 900; margin: 0; letter-spacing: -3px; }
-        .tagline { font-size: 1.2rem; color: #666; margin-top: 10px; font-weight: 300; }
+        header { margin-bottom: 80px; }
+        h1 { font-size: 3.5rem; font-weight: 900; margin: 0; letter-spacing: -2px; }
+        .role { font-size: 1.1rem; color: var(--secondary); margin-top: 10px; font-weight: 400; }
         
-        .nav-links { margin-top: 60px; }
-        .nav-links a { 
-            display: inline-block;
-            text-decoration: none;
-            color: #000;
-            font-size: 0.9rem;
-            font-weight: 600;
-            margin-right: 30px;
-            padding-bottom: 4px;
-            border-bottom: 2px solid #eee;
-            transition: 0.3s;
+        /* 模块化入口 */
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 40px;
         }
-        .nav-links a:hover { border-bottom-color: #000; }
+        .module-label {
+            font-size: 0.7rem;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            color: #ccc;
+            margin-bottom: 15px;
+            display: block;
+        }
+        .nav-link {
+            display: block;
+            text-decoration: none;
+            color: var(--primary);
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 8px;
+            transition: 0.2s;
+        }
+        .nav-link:hover { color: var(--secondary); text-decoration: underline; }
+        .desc { font-size: 0.85rem; color: var(--secondary); line-height: 1.4; }
 
-        footer { position: absolute; bottom: 50px; font-size: 0.7rem; color: #ccc; letter-spacing: 1px; }
+        footer { margin-top: 100px; font-size: 0.75rem; color: #eee; }
     </style>
 </head>
 <body>
 
-    <header>
-        <h1>Eve Zhang.</h1>
-        <p class="tagline">Product Manager产品经理 / 终身学习者</p>
-    </header>
-    
-    <nav class="nav-links">
-        <a href="https://github.com/eve-zzh?tab=repositories" target="_blank">REPOSITORIES</a>
-        <a href="你的火花思维Vercel链接" target="_blank">SPARKMIND (火花思维)</a>
-        <a href="#">RESUME</a>
-        <a href="mailto:你的邮箱">CONTACT</a>
-    </nav>
+    <div class="container">
+        <header>
+            <h1>Eve Zhang.</h1>
+            <p class="role">产品经理 / 终身学习者</p>
+        </header>
 
-    <footer>© 2026 Eve. DESIGNED TO BE MINIMAL.</footer>
+        <div class="grid">
+            <div>
+                <span class="module-label">Portfolio</span>
+                <a href="https://github.com/eve-zzh?tab=repositories" class="nav-link">Builds & Projects →</a>
+                <p class="desc">所有技术实践与产品原型，实时同步于 GitHub 仓库。</p>
+            </div>
+
+            <div>
+                <span class="module-label">Profile</span>
+                <a href="#" class="nav-link">Resume / CV</a>
+                <p class="desc">关于我的个人经历以及产品思考。</p>
+            </div>
+
+            <div>
+                <span class="module-label">Connect</span>
+                <a href="mailto:你的邮箱" class="nav-link">Get in touch</a>
+                <p class="desc">欢迎业务交流或技术探讨。</p>
+            </div>
+        </div>
+
+        <footer>© 2026 EVE. ALL RIGHTS RESERVED.</footer>
+    </div>
 
 </body>
 </html>
