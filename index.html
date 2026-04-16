@@ -4,61 +4,81 @@
     <meta charset="UTF-8">
     <title>Eve | Portfolio</title>
     <style>
+        /* 1. 基础样式：黑白、高级感 */
         body {
             background-color: #fff;
-            color: #1a1a1a;
-            font-family: -apple-system, "Helvetica Neue", "Arial", sans-serif;
-            max-width: 700px;
-            margin: 80px auto;
-            padding: 0 40px;
-            line-height: 1.6;
+            color: #000;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 80px 40px;
+            line-height: 1.5;
         }
-        header { border-bottom: 3px solid #000; padding-bottom: 30px; margin-bottom: 60px; }
-        h1 { font-size: 2rem; font-weight: 800; letter-spacing: -1px; margin: 0; text-transform: uppercase; }
-        .subtitle { color: #666; font-size: 1rem; margin-top: 10px; font-weight: 400; }
+
+        /* 2. 顶部个人信息 */
+        header { margin-bottom: 100px; }
+        h1 { font-size: 3rem; font-weight: 900; margin: 0; letter-spacing: -2px; }
+        .bio { font-size: 1.1rem; color: #666; margin-top: 10px; }
+
+        /* 3. 项目列表：通用的，想加几个加几个 */
+        .project-section { margin-top: 50px; }
+        .section-label { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 2px; color: #999; border-bottom: 1px solid #eee; padding-bottom: 10px; margin-bottom: 30px; }
         
-        .section-title { font-size: 0.8rem; font-weight: 700; color: #999; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 30px; }
-        
-        .project-item { margin-bottom: 40px; display: block; text-decoration: none; color: inherit; transition: 0.2s; }
-        .project-header { display: flex; justify-content: space-between; align-items: baseline; }
-        .project-title { font-size: 1.2rem; font-weight: 700; border-bottom: 2px solid transparent; transition: 0.3s; }
-        .project-item:hover .project-title { border-bottom: 2px solid #000; }
-        .project-tag { font-size: 0.7rem; color: #fff; background: #000; padding: 2px 8px; border-radius: 3px; vertical-align: middle; margin-left: 10px; }
-        .project-desc { font-size: 0.9rem; color: #555; margin-top: 8px; }
-        .date { font-family: "Georgia", serif; font-size: 0.85rem; color: #bbb; font-style: italic; }
-        
-        footer { margin-top: 120px; padding-top: 20px; border-top: 1px solid #eee; font-size: 0.75rem; color: #aaa; display: flex; justify-content: space-between; }
+        .project-link {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            text-decoration: none;
+            color: #000;
+            padding: 20px 0;
+            border-bottom: 1px solid #f0f0f0;
+            transition: all 0.2s ease;
+        }
+
+        .project-link:hover { padding-left: 10px; background-color: #fafafa; }
+        .project-name { font-size: 1.25rem; font-weight: 600; }
+        .project-type { font-size: 0.8rem; color: #999; text-transform: uppercase; }
+
+        /* 4. 底部联系方式 */
+        footer { margin-top: 150px; font-size: 0.8rem; color: #ccc; }
+        .contact-links a { color: #999; text-decoration: none; margin-right: 20px; border-bottom: 1px solid transparent; }
+        .contact-links a:hover { color: #000; border-bottom: 1px solid #000; }
     </style>
 </head>
 <body>
+
     <header>
-        <h1>Eve's Portfolio</h1>
-        <p class="subtitle">后端开发工程师 / 专注于 Go 语言与自动化架构</p>
+        <h1>EVE.</h1>
+        <p class="bio">后端开发工程师 / 专注于简洁的代码与高效的架构</p>
     </header>
 
-    <div class="section-title">Selected Projects / 精选项目</div>
+    <div class="project-section">
+        <div class="section-label">Works / 项目集成</div>
 
-    <div class="project-list">
-        <a href="word-tree.html" class="project-item">
-            <div class="project-header">
-                <span class="project-title">词汇成长树交互系统 <span class="project-tag">Frontend</span></span>
-                <span class="date">2026.04</span>
-            </div>
-            <p class="project-desc">基于原生 JavaScript 开发的视觉交互实验，通过生长算法模拟词汇积累过程，探索艺术与代码的结合。</p>
+        <a href="word-tree.html" class="project-link">
+            <span class="project-name">词汇成长树</span>
+            <span class="project-type">Interactive / JS</span>
         </a>
 
-        <a href="https://github.com/eve-zzh/new-api" class="project-item">
-            <div class="project-header">
-                <span class="project-title">New-API 后端中转服务 <span class="project-tag">Golang</span></span>
-                <span class="date">In Progress</span>
-            </div>
-            <p class="project-desc">高性能 API 聚合与转发引擎。采用 Go 语言构建，支持多协议接入、流控管理及自动化运维部署。</p>
+        <a href="https://github.com/eve-zzh/new-api" class="project-link">
+            <span class="project-name">New-API Service</span>
+            <span class="project-type">Backend / Go</span>
         </a>
+
+        <a href="#" class="project-link" style="opacity: 0.3; cursor: default;">
+            <span class="project-name">Coming Soon...</span>
+            <span class="project-type">Future Project</span>
+        </a>
+
     </div>
 
     <footer>
-        <span>© 2026 EVE. BUILT WITH VIBE CODING.</span>
-        <span>GITHUB / EVE-ZZH</span>
+        <div class="contact-links">
+            <a href="https://github.com/eve-zzh">GITHUB</a>
+            <a href="mailto:你的邮箱">EMAIL</a>
+        </div>
+        <p style="margin-top: 20px;">© 2026 EVE. ALL RIGHTS RESERVED.</p>
     </footer>
+
 </body>
 </html>
