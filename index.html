@@ -2,83 +2,55 @@
 <html lang="zh">
 <head>
     <meta charset="UTF-8">
-    <title>Eve | Portfolio</title>
+    <title>Eve | Profile</title>
     <style>
-        /* 1. 基础样式：黑白、高级感 */
         body {
             background-color: #fff;
             color: #000;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-            max-width: 800px;
+            font-family: -apple-system, "Inter", sans-serif;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            height: 90vh; /* 让内容垂直居中 */
+            max-width: 600px;
             margin: 0 auto;
-            padding: 80px 40px;
-            line-height: 1.5;
+            padding: 0 40px;
         }
 
-        /* 2. 顶部个人信息 */
-        header { margin-bottom: 100px; }
-        h1 { font-size: 3rem; font-weight: 900; margin: 0; letter-spacing: -2px; }
-        .bio { font-size: 1.1rem; color: #666; margin-top: 10px; }
-
-        /* 3. 项目列表：通用的，想加几个加几个 */
-        .project-section { margin-top: 50px; }
-        .section-label { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 2px; color: #999; border-bottom: 1px solid #eee; padding-bottom: 10px; margin-bottom: 30px; }
+        h1 { font-size: 4rem; font-weight: 900; margin: 0; letter-spacing: -3px; }
+        .tagline { font-size: 1.2rem; color: #666; margin-top: 10px; font-weight: 300; }
         
-        .project-link {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
+        .nav-links { margin-top: 60px; }
+        .nav-links a { 
+            display: inline-block;
             text-decoration: none;
             color: #000;
-            padding: 20px 0;
-            border-bottom: 1px solid #f0f0f0;
-            transition: all 0.2s ease;
+            font-size: 0.9rem;
+            font-weight: 600;
+            margin-right: 30px;
+            padding-bottom: 4px;
+            border-bottom: 2px solid #eee;
+            transition: 0.3s;
         }
+        .nav-links a:hover { border-bottom-color: #000; }
 
-        .project-link:hover { padding-left: 10px; background-color: #fafafa; }
-        .project-name { font-size: 1.25rem; font-weight: 600; }
-        .project-type { font-size: 0.8rem; color: #999; text-transform: uppercase; }
-
-        /* 4. 底部联系方式 */
-        footer { margin-top: 150px; font-size: 0.8rem; color: #ccc; }
-        .contact-links a { color: #999; text-decoration: none; margin-right: 20px; border-bottom: 1px solid transparent; }
-        .contact-links a:hover { color: #000; border-bottom: 1px solid #000; }
+        footer { position: absolute; bottom: 50px; font-size: 0.7rem; color: #ccc; letter-spacing: 1px; }
     </style>
 </head>
 <body>
 
     <header>
         <h1>EVE.</h1>
-        <p class="bio">后端开发工程师 / 专注于简洁的代码与高效的架构</p>
+        <p class="tagline">后端开发工程师 / Go 语言开发者 / 终身学习者</p>
     </header>
 
-    <div class="project-section">
-        <div class="section-label">Works / 项目集成</div>
+    <nav class="nav-links">
+        <a href="https://github.com/eve-zzh?tab=repositories" target="_blank">REPOSITORIES</a>
+        <a href="#">RESUME</a>
+        <a href="mailto:你的邮箱">CONTACT</a>
+    </nav>
 
-        <a href="word-tree.html" class="project-link">
-            <span class="project-name">词汇成长树</span>
-            <span class="project-type">Interactive / JS</span>
-        </a>
-
-        <a href="https://github.com/eve-zzh/new-api" class="project-link">
-            <span class="project-name">New-API Service</span>
-            <span class="project-type">Backend / Go</span>
-        </a>
-
-        <a href="#" class="project-link" style="opacity: 0.3; cursor: default;">
-            <span class="project-name">Coming Soon...</span>
-            <span class="project-type">Future Project</span>
-        </a>
-
-    </div>
-
-    <footer>
-        <div class="contact-links">
-            <a href="https://github.com/eve-zzh">GITHUB</a>
-            <a href="mailto:你的邮箱">EMAIL</a>
-        </div>
-        <p style="margin-top: 20px;">© 2026 EVE. ALL RIGHTS RESERVED.</p>
-    </footer>
+    <footer>© 2026 EVE. DESIGNED TO BE MINIMAL.</footer>
 
 </body>
 </html>
