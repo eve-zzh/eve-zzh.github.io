@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>单词墙修补匠</title>
+    <style>
+        :root {
+            --sky-color: #87CEEB;
+            --brick-safe: #d35400; /* 完好 */
+            --brick-broken: #95a5a6; /* 待修 */
+            --brick-hole: #2c3e50; /* 空洞 */
+            --text-color: #2c3e50;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+            background-color: var(--sky-color);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            overflow: hidden;
+        }
+
+        header {
+            padding: 15px 20px;
+            text-align: center;
+            z-index: 10;
+            background: rgba(255,255,255,0.8);
+            width: 100%;
+            box-sizing: border-box;
+            backdrop-filter: blur(5px);
+        }
+
+        h1 { margin: 0; font-size: 1.5rem; color: var(--text-color); }
+
+        .progress-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 10px;
+            font-size: 0.9rem;
+            color: #555;
+        }
+
+        .progress-bar {
+            width: 150px;
+            height: 8px;
+            background: rgba(0,0,0,0.1);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        .progress-fill {
+            height: 100%;
+            background: #27ae60;
+            width: 0%;
+            transition: width 0.4s ease;
+        }
+
+        /* 墙体区域 */
+        #wall-container {
+            position: relative;
+            width: 90%;
+            max-width: 800px;
+            height: 60vh;
+            background: #bdc3c7;
+            border: 10px solid #7f8c8d;
+            border-radius: 4px;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
+            grid-auto-rows: 45px;
+            gap: 4px;
+            padding: 8px;
+            overflow-y: auto;
+        }
+
+        /* 砖块通用样式 */
+        .brick {
+            border: 2px solid rgba(0,0,0,0.1);
+            border-radius: 2px;
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 0.85rem;
+            color: rgba(255,255,255,0.9);
+            font-weight: bold;
+            transition: all 0.3s;
+            cursor: default;
+        }
+
+        /* 1. 完好砖块 */
+        .brick.safe {
+            background-color: var(--brick-safe);
+            box-shadow: inset 2px 2px 5px rgba(255,255,255,0.3), inset -2px -2px 5px rgba(0,0,0,0.2);
+        }
+
+        /* 2. 待修砖块 (初始破损) */
+        .brick.broken {
+            background-color: var(--brick-broken);
+            cursor: pointer;
+            /* 裂纹 */
+            background-image: 
+                linear-gradient(45deg, transparent 45%, rgba(0,0,0,0.2) 45%, rgba(0,0,0,0.2) 55%, transparent 55%),
+                linear-gradient(-45deg, transparent 45%, rgba(0,0,0,0.2) 45%, rgba(0,0,0,0.2) 55%, transparent 55%);
+            background-size: 20px 20px;
+        }
+        .brick.broken:hover { transform: scale(1.05); z-index: 2; }
+
+        /* 3. 空洞砖块 (未掌握) */
+        .brick.hole {
+            background-color: var(--brick-hole);
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.8);
+            cursor: default;
+            opacity: 0.9;
+        }
+
+        /* 修复动画 */
+        .brick.repaired {
+            animation: cementFlash 0.6s ease-out;
+        }
+
+        /* 破碎动画 (变成空洞) */
+        .brick.crumbled {
+            animation: crumble 0.5s ease-out forwards;
+        }
+
+        /* 修补弹窗 */
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.6);
+            z-index: 100;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            opacity: 0; pointer-events: none;
+            transition: opacity 0.3s;
+        }
+        .modal-overlay.active { opacity: 1; pointer-events: auto; }
+
+        .repair-card {
+            background: white;
+            width: 85%;
+            max-width: 320px;
+            padding: 25px;
+            border-radius: 12px;
+            text-align: center;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            transform: scale(0.9);
+            transition: transform 0.3s;
+        }
+        .modal-overlay.active .repair-card { transform: scale(1); }
+
+        .target-cn { font-size: 2rem; font-weight: bold; color: var(--brick-safe); margin-bottom: 20px; }
+
+        #fix-input {
+            width: 100%; padding: 12px; font-size: 1.2rem;
+            border: 2px solid #ddd; border-radius: 8px;
+            margin-bottom: 10px; text-align: center; box-sizing: border-box;
+        }
+        #fix-input.error { border-color: #e74c3c; animation: shake 0.4s; }
+
+        .modal-btns { display: flex; gap: 10px; }
+        .btn {
+            flex: 1; padding: 12px; font-size: 1rem; border-radius: 8px;
+            cursor: pointer; border: none; font-weight: bold; color: white;
+        }
+        .btn-fix { background: var(--brick-safe); }
+        .btn-skip { background: #7f8c8d; }
+
+        /* 胜利界面 */
+        .success-screen {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(44, 62, 80, 0.95);
+            z-index: 200;
+            display: flex; flex-direction: column;
+            justify-content: center; align-items: center;
+            color: white; opacity: 0; pointer-events: none; transition: opacity 0.5s;
+        }
+        .success-screen.active { opacity: 1; pointer-events: auto; }
+
+        .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin: 20px 0; text-align: center; }
+        .stat-item h3 { font-size: 2rem; margin: 0; color: #f1c40f; }
+        .stat-item p { margin: 5px 0 0; font-size: 0.9rem; opacity: 0.8; }
+        .btn-restart {
+            margin-top: 30px; background: white; color: #2c3e50;
+            padding: 15px 40px; border-radius: 30px; font-size: 1.2rem;
+            font-weight: bold; border: none; cursor: pointer;
+        }
+
+        @keyframes cementFlash {
+            0% { filter: brightness(1); transform: scale(1); }
+            50% { filter: brightness(2); transform: scale(1.1); }
+            100% { filter: brightness(1); transform: scale(1); }
+        }
+        @keyframes crumble {
+            0% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(0.8) rotate(5deg); opacity: 0.7; }
+            100% { transform: scale(0); opacity: 0; }
+        }
+        @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-5px); } 75% { transform: translateX(5px); } }
+
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>单词墙修补匠</h1>
+        <div class="progress-container">
+            <span>进度</span>
+            <div class="progress-bar"><div class="progress-fill" id="progress-fill"></div></div>
+            <span id="progress-text">0/0</span>
+        </div>
+    </header>
+
+    <div id="wall-container">
+        <!-- 砖块由 JS 生成 -->
+    </div>
+
+    <!-- 修补弹窗 -->
+    <div class="modal-overlay" id="modal">
+        <div class="repair-card">
+            <div style="font-size:0.9rem; color:#888; margin-bottom:10px;">尝试修补这道裂缝</div>
+            <div class="target-cn" id="modal-cn">苹果</div>
+            <input type="text" id="fix-input" placeholder="输入英文" autocomplete="off">
+            <div class="modal-btns">
+                <button class="btn btn-skip" onclick="wallGame.skipBrick()">不会/跳过</button>
+                <button class="btn btn-fix" onclick="wallGame.submitFix()">确定</button>
+           不会/跳过
+            </div>
+            <div id="error-msg" style="color:#e74c3c; font-size:0.8rem; margin-top:8px; min-height:1.2em;"></div>
+        </div>
+    </div>
+
+    <!-- 胜利/结算界面 -->
+    <div class="success-screen" id="success-screen">
+        <h2>修补作业完成</h2>
+        <div class="stats-grid">
+            <div class="stat-item">
+                <h3 id="stat-fixed">0</h3>
+                <p>已修补 (掌握)</p>
+            </div>
+            <div class="stat-item">
+                <h3 id="stat-holes">0</h3>
+                <p>留空 (需复习)</p>
+            </div>
+        </div>
+        <button class="btn-restart" onclick="wallGame.restartGame()">再修一面墙</button>
+    </div>
+
+    <script>
+        const wordData = [
+            { en: "Apple", cn: "苹果" }, { en: "Banana", cn: "香蕉" },
+            { en: "Cherry", cn: "樱桃" }, { en: "Grape", cn: "葡萄" },
+            { en: "Lemon", cn: "柠檬" }, { en: "Mango", cn: "芒果" },
+            { en: "Peach", cn: "桃子" }, { en: "Pear", cn: "梨" },
+            { en: "Plum", cn: "李子" }, { en: "Berry", cn: "浆果" },
+            { en: "Melon", cn: "甜瓜" }, { en: "Olive", cn: "橄榄" }
+        ];
+
+        class WallGame {
+            constructor() {
+                this.words = [];
+                this.totalBroken = 0;
+                this.fixedCount = 0;
+                this.holesCount = 0;
+                this.currentBrickIndex = -1;
+                this.currentMistakes = 0; // 当前词错误次数
+
+                this.dom = {
+                    wall: document.getElementById('wall-container'),
+                    modal: document.getElementById('modal'),
+                    cn: document.getElementById('modal-cn'),
+                    input: document.getElementById('fix-input'),
+                    error: document.getElementById('error-msg'),
+                    progress: document.getElementById('progress-fill'),
+                    progressText: document.getElementById('progress-text'),
+                    successScreen: document.getElementById('success-screen'),
+                    statFixed: document.getElementById('stat-fixed'),
+                    statHoles: document.getElementById('stat-holes')
+                };
+
+                this.dom.input.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter') this.submitFix();
+                });
+
+                this.startGame();
+            }
+
+            startGame() {
+                this.words = [...wordData].sort(() => 0.5 - Math.random());
+                this.totalBroken = 0;
+                this.fixedCount = 0;
+                this.holesCount = 0;
+                this.dom.successScreen.classList.remove('active');
+                this.initWall();
+            }
+
+            restartGame() {
+                this.startGame();
+            }
+
+            initWall() {
+                this.dom.wall.innerHTML = '';
+                this.updateProgress();
+
+                this.words.forEach((word, index) => {
+                    const isBroken = Math.random() > 0.3; // 70% 概率破损，增加难度
+                    
+                    const brick = document.createElement('div');
+                    brick.className = `brick ${isBroken ? 'broken' : 'safe'}`;
+                    brick.id = `brick-${index}`;
+                    
+                    brick.innerHTML = `<span>${isBroken ? '?' : word.en}</span>`;
+
+                    if (isBroken) {
+                        brick.onclick = () => this.openRepair(index);
+                        this.totalBroken++;
+                    }
+
+                    this.dom.wall.appendChild(brick);
+                });
+                this.updateProgress();
+            }
+
+            openRepair(index) {
+                this.currentBrickIndex = index;
+                this.currentMistakes = 0; // 重置错误计数
+                this.dom.cn.textContent = this.words[index].cn;
+                this.dom.input.value = '';
+                this.dom.input.classList.remove('error');
+                this.dom.error.textContent = '';
+                this.dom.modal.classList.add('active');
+                setTimeout(() => this.dom.input.focus(), 100);
+            }
+
+            submitFix() {
+                const val = this.dom.input.value.trim();
+                const targetWord = this.words[this.currentBrickIndex].en;
+
+                if (!val) return;
+
+                if (val.toLowerCase() === targetWord.toLowerCase()) {
+                    // 答对：修复
+                    this.successFix();
+                } else {
+                    // 答错
+                    this.currentMistakes++;
+                    this.dom.input.value = '';
+                    this.dom.input.classList.add('error');
+                    setTimeout(() => this.dom.input.classList.remove('error'), 400);
+
+                    // 逻辑：错3次自动放弃，变成空洞
+                    if (this.currentMistakes >= 3) {
+                        this.dom.error.textContent = '错误次数过多，砖块已崩塌！';
+                        setTimeout(() => {
+                            this.failBrick(); // 变成空洞
+                            this.dom.modal.classList.remove('active');
+                        }, 1000);
+                    } else {
+                        this.dom.error.textContent = `错误！还剩 ${3 - this.currentMistakes} 次机会`;
+                    }
+                }
+            }
+
+            skipBrick() {
+                // 主动跳过：直接变成空洞
+                this.failBrick();
+                this.dom.modal.classList.remove('active');
+            }
+
+            successFix() {
+                this.dom.modal.classList.remove('active');
+                const brickEl = document.getElementById(`brick-${this.currentBrickIndex}`);
+                
+                // 样式切换
+                brickEl.classList.remove('broken');
+                brickEl.classList.add('safe', 'repaired');
+                brickEl.innerHTML = `<span>${this.words[this.currentBrickIndex].en}</span>`;
+                brickEl.onclick = null;
+
+                this.fixedCount++;
+                this.checkFinish();
+            }
+
+            failBrick() {
+                // 失败处理：变成空洞
+                const brickEl = document.getElementById(`brick-${this.currentBrickIndex}`);
+                
+                brickEl.classList.remove('broken');
+                brickEl.classList.add('hole', 'crumbled'); // 添加破碎动画
+                brickEl.innerHTML = `<span>❌</span>`; // 或显示空洞
+                brickEl.onclick = null;
+
+                this.holesCount++;
+                this.checkFinish();
+            }
+
+            checkFinish() {
+                this.updateProgress();
+                if (this.fixedCount + this.holesCount >= this.totalBroken) {
+                    setTimeout(() => {
+                        this.dom.statFixed.textContent = this.fixedCount;
+                        this.dom.statHoles.textContent = this.holesCount;
+                        this.dom.successScreen.classList.add('active');
+                    }, 500);
+                }
+            }
+
+            updateProgress() {
+                const totalDone = this.fixedCount + this.holesCount;
+                this.dom.progress.style.width = this.totalBroken === 0 ? '100%' : `${(totalDone / this.totalBroken) * 100}%`;
+                this.dom.progressText.textContent = `${totalDone}/${this.totalBroken}`;
+            }
+        }
+
+        const wallGame = new WallGame();
+    </script>
+</body>
+</html>

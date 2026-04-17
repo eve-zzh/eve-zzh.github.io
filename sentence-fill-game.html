@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>句子填空游戏</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            padding: 40px;
+            max-width: 800px;
+            width: 100%;
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 30px;
+            font-size: 2em;
+        }
+
+        .play-btn {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            color: white;
+            font-size: 32px;
+            cursor: pointer;
+            display: block;
+            margin: 0 auto 30px;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+            transition: all 0.3s ease;
+        }
+
+        .play-btn:hover {
+            transform: scale(1.1);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
+        }
+
+        .play-btn:active {
+            transform: scale(0.95);
+        }
+
+        .sentence {
+            text-align: center;
+            font-size: 1.8em;
+            line-height: 1.8;
+            color: #333;
+            margin-bottom: 40px;
+            min-height: 100px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 15px;
+        }
+
+        .blank {
+            display: inline-block;
+            min-width: 150px;
+            padding: 0 10px;
+            border-bottom: 3px solid #667eea;
+            color: #667eea;
+            font-weight: bold;
+            transition: all 0.3s ease;
+        }
+
+        .blank.filled {
+            border-bottom: 3px solid #11998e;
+            color: #11998e;
+        }
+
+        .blank.correct {
+            color: #11998e;
+            border-bottom-color: #11998e;
+            animation: correctPulse 0.5s ease;
+        }
+
+        @keyframes correctPulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+
+        .options {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+            margin-top: 30px;
+        }
+
+        .option-btn {
+            padding: 20px;
+            font-size: 1.2em;
+            border: 3px solid #667eea;
+            border-radius: 15px;
+            background: white;
+            color: #667eea;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 500;
+        }
+
+        .option-btn:hover {
+            background: #667eea;
+            color: white;
+            transform: translateY(-3px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        .option-btn:active {
+            transform: translateY(0);
+        }
+
+        .option-btn.wrong {
+            animation: shake 0.5s;
+            background: #e74c3c;
+            border-color: #e74c3c;
+            color: white;
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            10%, 30%, 50%, 70%, 90% { transform: translateX(-10px); }
+            20%, 40%, 60%, 80% { transform: translateX(10px); }
+        }
+
+        .option-btn.disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            pointer-events: none;
+        }
+
+        .next-btn {
+            display: block;
+            margin: 30px auto 0;
+            padding: 15px 40px;
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+            color: white;
+            border: none;
+            border-radius: 25px;
+            font-size: 1.1em;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(17, 153, 142, 0.4);
+        }
+
+        .next-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(17, 153, 142, 0.6);
+        }
+
+        .next-btn.hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎯 句子填空游戏</h1>
+        
+        <button class="play-btn" id="playBtn">▶️</button>
+        
+        <div class="sentence" id="sentence"></div>
+        
+        <div class="options" id="options"></div>
+        
+        <button class="next-btn hidden" id="nextBtn">下一个句子</button>
+    </div>
+
+    <script>
+        // 句子数据
+        const sentences = [
+            {
+                text: "I love to eat [____] in the morning.",
+                target: "breakfast",
+                options: ["breakfast", "dinner", "lunch", "snack"]
+            },
+            {
+                text: "She is a very [____] student.",
+                target: "diligent",
+                options: ["lazy", "diligent", "careless", "slow"]
+            },
+            {
+                text: "The weather is [____] today.",
+                target: "sunny",
+                options: ["rainy", "cloudy", "sunny", "windy"]
+            },
+            {
+                text: "He plays the [____] very well.",
+                target: "piano",
+                options: ["guitar", "piano", "violin", "drums"]
+            },
+            {
+                text: "We need to [____] for the exam.",
+                target: "study",
+                options: ["play", "study", "sleep", "eat"]
+            }
+        ];
+
+        let currentIndex = 0;
+        let isAnswered = false;
+
+        // 初始化游戏
+        function initGame() {
+            isAnswered = false;
+            const sentence = sentences[currentIndex];
+            
+            // 显示句子
+            displaySentence(sentence);
+            
+            // 显示选项
+            displayOptions(sentence);
+            
+            // 隐藏下一个按钮
+            document.getElementById('nextBtn').classList.add('hidden');
+        }
+
+        // 显示句子
+        function displaySentence(sentence) {
+            const sentenceDiv = document.getElementById('sentence');
+            const parts = sentence.text.split('[____]');
+            
+            sentenceDiv.innerHTML = `
+                ${parts[0]}<span class="blank" id="blank">____</span>${parts[1]}
+            `;
+        }
+
+        // 显示选项
+        function displayOptions(sentence) {
+            const optionsDiv = document.getElementById('options');
+            optionsDiv.innerHTML = '';
+            
+            // 打乱选项顺序
+            const shuffled = [...sentence.options].sort(() => Math.random() - 0.5);
+            
+            shuffled.forEach(option => {
+                const btn = document.createElement('button');
+                btn.className = 'option-btn';
+                btn.textContent = option;
+                btn.onclick = () => selectOption(option, sentence.target);
+                optionsDiv.appendChild(btn);
+            });
+        }
+
+        // 选择选项
+        function selectOption(selected, correct) {
+            if (isAnswered) return;
+            
+            isAnswered = true;
+            const blank = document.getElementById('blank');
+            const buttons = document.querySelectorAll('.option-btn');
+            
+            if (selected === correct) {
+                // 正确
+                blank.textContent = correct;
+                blank.classList.add('correct');
+                
+                // 禁用所有按钮
+                buttons.forEach(btn => {
+                    btn.classList.add('disabled');
+                    if (btn.textContent === correct) {
+                        btn.style.background = '#11998e';
+                        btn.style.borderColor = '#11998e';
+                        btn.style.color = 'white';
+                    }
+                });
+                
+                // 播放成功音效
+                playSuccessSound();
+                
+                // 显示下一个按钮
+                document.getElementById('nextBtn').classList.remove('hidden');
+            } else {
+                // 错误
+                const wrongBtn = Array.from(buttons).find(btn => btn.textContent === selected);
+                if (wrongBtn) {
+                    wrongBtn.classList.add('wrong');
+                }
+                
+                // 高亮正确答案
+                setTimeout(() => {
+                    const correctBtn = Array.from(buttons).find(btn => btn.textContent === correct);
+                    if (correctBtn) {
+                        correctBtn.style.background = '#11998e';
+                        correctBtn.style.borderColor = '#11998e';
+                        correctBtn.style.color = 'white';
+                    }
+                    
+                    // 填充正确答案
+                    blank.textContent = correct;
+                    blank.classList.add('correct');
+                    
+                    // 禁用所有按钮
+                    buttons.forEach(btn => btn.classList.add('disabled'));
+                    
+                    // 显示下一个按钮
+                    document.getElementById('nextBtn').classList.remove('hidden');
+                }, 1000);
+            }
+        }
+
+        // 播放句子音频
+        function playSentence() {
+            const sentence = sentences[currentIndex];
+            const fullText = sentence.text.replace('[____]', sentence.target);
+            
+            const utterance = new SpeechSynthesisUtterance(fullText);
+            utterance.lang = 'en-US';
+            utterance.rate = 0.9;
+            window.speechSynthesis.speak(utterance);
+        }
+
+        // 播放成功音效
+        function playSuccessSound() {
+            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            oscillator.frequency.value = 523.25; // C5
+            oscillator.type = 'sine';
+            
+            gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
+            
+            oscillator.start(audioContext.currentTime);
+            oscillator.stop(audioContext.currentTime + 0.5);
+        }
+
+        // 下一个句子
+        function nextSentence() {
+            currentIndex = (currentIndex + 1) % sentences.length;
+            initGame();
+        }
+
+        // 事件监听
+        document.getElementById('playBtn').addEventListener('click', playSentence);
+        document.getElementById('nextBtn').addEventListener('click', nextSentence);
+
+        // 初始化
+        initGame();
+    </script>
+</body>
+</html>

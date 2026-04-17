@@ -1,0 +1,553 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>词义三岔口 - 单词辨析</title>
+    <style>
+        :root {
+            --primary: #6c5ce7;
+            --secondary: #a29bfe;
+            --accent: #00b894;
+            --danger: #d63031;
+            --dark: #2d3436;
+            --light: #dfe6e9;
+        }
+
+        * {
+            box-sizing: border-box;
+            user-select: none; /* 禁止选中文本，优化拖拽 */
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background: linear-gradient(135deg, #1e1e2f 0%, #2d3436 100%);
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            color: white;
+        }
+
+        /* 顶部状态栏 */
+        header {
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(0,0,0,0.3);
+            z-index: 10;
+        }
+
+        .score-board { font-size: 1.2rem; font-weight: bold; }
+        .timer-bar-container {
+            flex: 1;
+            height: 10px;
+            background: rgba(255,255,255,0.2);
+            margin: 0 20px;
+            border-radius: 5px;
+            overflow: hidden;
+        }
+        .timer-bar {
+            height: 100%;
+            background: var(--accent);
+            width: 100%;
+            transition: width 0.1s linear;
+        }
+
+        /* 游戏主舞台 */
+        main {
+            flex: 1;
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+        }
+
+        /* 提示区域 (中文释义) */
+        .target-prompt {
+            font-size: 2.5rem;
+            font-weight: bold;
+            text-align: center;
+            margin-bottom: 40px;
+            text-shadow: 0 4px 10px rgba(0,0,0,0.5);
+            min-height: 60px;
+        }
+
+        /* 放置区域 (舞台) */
+        .drop-zone {
+            width: 160px;
+            height: 160px;
+            border: 4px dashed rgba(255,255,255,0.3);
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: all 0.3s;
+            background: rgba(255,255,255,0.05);
+            margin-bottom: 60px;
+        }
+
+        .drop-zone.highlight {
+            border-color: var(--accent);
+            background: rgba(0, 184, 148, 0.2);
+            transform: scale(1.05);
+        }
+
+        .drop-zone.drag-over {
+            border-color: white;
+            background: rgba(255,255,255,0.1);
+        }
+
+        .placed-word {
+            font-size: 2rem;
+            font-weight: bold;
+            color: white;
+            pointer-events: none; /* 放置后不可再拖 */
+        }
+
+        /* 底部数字人与选项区 */
+        .bottom-panel {
+            height: 35%;
+            background: #fff;
+            border-top-left-radius: 30px;
+            border-top-right-radius: 30px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            position: relative;
+            box-shadow: 0 -5px 20px rgba(0,0,0,0.3);
+        }
+
+        /* 数字人 */
+        .avatar-container {
+            position: absolute;
+            top: -50px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .avatar {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            border: 4px solid white;
+            background-image: url('https://api.dicebear.com/7.x/bottts/svg?seed=DigitalTeacher');
+            background-size: cover;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+
+        .speech-bubble {
+            position: absolute;
+            bottom: 110px;
+            background: var(--primary);
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            opacity: 0;
+            transition: opacity 0.3s;
+            white-space: nowrap;
+        }
+        
+        .avatar-container:hover .speech-bubble { opacity: 1; }
+
+        /* 选项区域 */
+        .options-container {
+            display: flex;
+            justify-content: space-around;
+            width: 100%;
+            margin-top: 40px;
+            height: 100%;
+            align-items: center;
+        }
+
+        .word-pill {
+            background: var(--secondary);
+            color: var(--dark);
+            padding: 12px 24px;
+            border-radius: 50px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            cursor: grab;
+            box-shadow: 0 4px 0 #6c5ce7; /* 3D effect */
+            transition: transform 0.1s, box-shadow 0.1s;
+            touch-action: none; /* 关键：允许触摸拖拽 */
+        }
+
+        .word-pill:active {
+            cursor: grabbing;
+            transform: translateY(4px);
+            box-shadow: 0 0 0 #6c5ce7;
+        }
+
+        .word-pill.dragging {
+            opacity: 0.5;
+            position: fixed; /* 拖拽时脱离文档流 */
+            z-index: 1000;
+            pointer-events: none; /* 让鼠标事件穿透，检测下方的 drop-zone */
+            transform: scale(1.1);
+        }
+
+        /* 反馈特效 */
+        .feedback-msg {
+            position: absolute;
+            top: 40%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 4rem;
+            font-weight: bold;
+            opacity: 0;
+            pointer-events: none;
+            z-index: 50;
+        }
+        .feedback-msg.correct { color: var(--accent); animation: popUp 0.8s forwards; }
+        .feedback-msg.wrong { color: var(--danger); animation: shakePop 0.8s forwards; }
+
+        @keyframes popUp {
+            0% { opacity: 0; transform: translate(-50%, -50%) scale(0.5); }
+            50% { opacity: 1; transform: translate(-50%, -50%) scale(1.2); }
+            100% { opacity: 0; transform: translate(-50%, -50%) scale(1); }
+        }
+        @keyframes shakePop {
+            0% { opacity: 0; transform: translate(-50%, -50%) scale(0.5) rotate(0); }
+            25% { opacity: 1; transform: translate(-50%, -50%) scale(1.2) rotate(-10deg); }
+            50% { transform: translate(-50%, -50%) scale(1.2) rotate(10deg); }
+            75% { transform: translate(-50%, -50%) scale(1.2) rotate(-10deg); }
+            100% { opacity: 0; transform: translate(-50%, -50%) scale(1) rotate(0); }
+        }
+
+        /* 开始/结束遮罩 */
+        .modal {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.85);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 200;
+            text-align: center;
+        }
+        .modal h1 { margin-bottom: 10px; font-size: 2.5rem; }
+        .modal p { margin-bottom: 30px; font-size: 1.2rem; color: #ccc; }
+        .btn-start {
+            padding: 15px 40px;
+            font-size: 1.5rem;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            box-shadow: 0 0 20px rgba(108, 92, 231, 0.5);
+        }
+        .hidden { display: none !important; }
+
+    </style>
+</head>
+<body>
+
+    <!-- 顶部 -->
+    <header>
+        <div class="score-board">得分: <span id="score">0</span></div>
+        <div class="timer-bar-container">
+            <div class="timer-bar" id="timer-bar"></div>
+        </div>
+        <div style="font-size:0.9rem; opacity:0.8">3秒</div>
+    </header>
+
+    <!-- 游戏区 -->
+    <main>
+        <div class="target-prompt" id="target-cn">安静</div>
+        <div class="drop-zone" id="drop-zone">
+            <span style="opacity: 0.5; font-size: 0.9rem;">拖拽此处</span>
+        </div>
+        <div class="feedback-msg" id="feedback"></div>
+    </main>
+
+    <!-- 底部操作区 -->
+    <div class="bottom-panel">
+        <div class="avatar-container">
+            <div class="speech-bubble">快！选准了！</div>
+            <div class="avatar"></div>
+        </div>
+        <div class="options-container" id="options-area">
+            <!-- 动态生成 -->
+        </div>
+    </div>
+
+    <!-- 开始界面 -->
+    <div id="start-screen" class="modal">
+        <h1>词义三岔口</h1>
+        <p>数字人给出中文，在 3 秒内<br>拖动正确的英文单词到舞台！</p>
+        <button class="btn-start" onclick="game.start()">开始挑战</button>
+    </div>
+
+    <!-- 结束界面 -->
+    <div id="end-screen" class="modal hidden">
+        <h1>游戏结束</h1>
+        <p>你的最终得分是</p>
+        <h2 id="final-score" style="font-size: 3rem; margin: 0 0 30px 0; color: var(--accent);">0</h2>
+        <button class="btn-start" onclick="game.start()">再试一次</button>
+    </div>
+
+    <script>
+        // 易混淆词库
+        const wordBank = [
+            { group: ['quite', 'quiet', 'quit'], cns: ['相当', '安静的', '离开'] },
+            { group: ['dessert', 'desert'], cns: ['甜点', '沙漠'] }, // 仅2个，逻辑需兼容
+            { group: ['adapt', 'adopt', 'adept'], cns: ['适应', '收养', '内行的'] },
+            { group: ['angle', 'angel', 'ankle'], cns: ['角度', '天使', '脚踝'] },
+            { group: ['diary', 'dairy'], cns: ['日记', '乳制品'] },
+            { group: ['stationary', 'stationery'], cns: ['静止的', '文具'] },
+            { group: ['complement', 'compliment'], cns: ['补充', '赞美'] },
+            { group: ['principal', 'principle'], cns: ['校长', '原则'] }
+        ];
+
+        class Game {
+            constructor() {
+                this.score = 0;
+                this.currentGroup = null;
+                this.targetWord = '';
+                this.timeLeft = 3000; // 3秒
+                this.maxTime = 3000;
+                this.timerId = null;
+                this.isPlaying = false;
+
+                // 拖拽状态
+                this.dragItem = null;
+                this.touchOffsetX = 0;
+                this.touchOffsetY = 0;
+
+                this.dom = {
+                    score: document.getElementById('score'),
+                    timerBar: document.getElementById('timer-bar'),
+                    targetCn: document.getElementById('target-cn'),
+                    dropZone: document.getElementById('drop-zone'),
+                    optionsArea: document.getElementById('options-area'),
+                    startScreen: document.getElementById('start-screen'),
+                    endScreen: document.getElementById('end-screen'),
+                    finalScore: document.getElementById('final-score'),
+                    feedback: document.getElementById('feedback')
+                };
+
+                this.initDragEvents();
+            }
+
+            start() {
+                this.score = 0;
+                this.updateScore();
+                this.dom.startScreen.classList.add('hidden');
+                this.dom.endScreen.classList.add('hidden');
+                this.isPlaying = true;
+                this.nextLevel();
+            }
+
+            nextLevel() {
+                if (!this.isPlaying) return;
+
+                // 重置 UI
+                this.dom.dropZone.innerHTML = '<span style="opacity: 0.5; font-size: 0.9rem;">拖拽此处</span>';
+                this.dom.dropZone.className = 'drop-zone';
+                
+                // 1. 选词组
+                const groupData = wordBank[Math.floor(Math.random() * wordBank.length)];
+                this.currentGroup = groupData.group;
+                
+                // 2. 选目标词（中文）
+                const targetIndex = Math.floor(Math.random() * this.currentGroup.length);
+                this.targetWord = this.currentGroup[targetIndex];
+                this.dom.targetCn.textContent = groupData.cns[targetIndex];
+
+                // 3. 渲染选项（打乱顺序）
+                this.renderOptions(this.shuffleArray([...this.currentGroup]));
+
+                // 4. 启动计时器
+                this.startTimer();
+            }
+
+            renderOptions(options) {
+                this.dom.optionsArea.innerHTML = '';
+                options.forEach(word => {
+                    const el = document.createElement('div');
+                    el.className = 'word-pill';
+                    el.textContent = word;
+                    el.dataset.word = word;
+                    // 绑定触摸/鼠标事件
+                    el.addEventListener('mousedown', (e) => this.handleDragStart(e, el));
+                    el.addEventListener('touchstart', (e) => this.handleDragStart(e, el), {passive: false});
+                    this.dom.optionsArea.appendChild(el);
+                });
+            }
+
+            startTimer() {
+                if (this.timerId) cancelAnimationFrame(this.timerId);
+                let startTime = null;
+
+                const step = (timestamp) => {
+                    if (!startTime) startTime = timestamp;
+                    const elapsed = timestamp - startTime;
+                    this.timeLeft = this.maxTime - elapsed;
+
+                    const percent = (this.timeLeft / this.maxTime) * 100;
+                    this.dom.timerBar.style.width = `${Math.max(0, percent)}%`;
+
+                    if (percent < 30) {
+                        this.dom.timerBar.style.background = '#d63031'; // 红色紧迫感
+                    } else {
+                        this.dom.timerBar.style.background = '#00b894';
+                    }
+
+                    if (this.timeLeft <= 0) {
+                        this.handleTimeout();
+                    } else if (this.isPlaying) {
+                        this.timerId = requestAnimationFrame(step);
+                    }
+                };
+                this.timerId = requestAnimationFrame(step);
+            }
+
+            handleTimeout() {
+                this.showFeedback(false, "超时!");
+                this.isPlaying = false; // 暂停输入防止误触
+                setTimeout(() => {
+                    this.isPlaying = true;
+                    this.nextLevel();
+                }, 1000);
+            }
+
+            // --- 拖拽核心逻辑 (兼容鼠标和触摸) ---
+            initDragEvents() {
+                // 全局移动和结束监听
+                window.addEventListener('mousemove', (e) => this.handleDragMove(e));
+                window.addEventListener('mouseup', (e) => this.handleDragEnd(e));
+                
+                window.addEventListener('touchmove', (e) => this.handleDragMove(e), {passive: false});
+                window.addEventListener('touchend', (e) => this.handleDragEnd(e));
+            }
+
+            handleDragStart(e, element) {
+                if (!this.isPlaying) return;
+                e.preventDefault(); // 防止原生滚动
+
+                this.dragItem = element;
+                
+                // 获取触点坐标
+                const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+                const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+
+                const rect = element.getBoundingClientRect();
+                this.touchOffsetX = clientX - rect.left;
+                this.touchOffsetY = clientY - rect.top;
+
+                // 设置样式：脱离文档流
+                this.dragItem.classList.add('dragging');
+                this.dragItem.style.left = (rect.left) + 'px';
+                this.dragItem.style.top = (rect.top) + 'px';
+                this.dragItem.style.width = rect.width + 'px';
+            }
+
+            handleDragMove(e) {
+                if (!this.dragItem) return;
+                if (e.touches) e.preventDefault(); // 防止滚动
+
+                const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+                const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+
+                // 移动元素
+                this.dragItem.style.left = (clientX - this.touchOffsetX) + 'px';
+                this.dragItem.style.top = (clientY - this.touchOffsetY) + 'px';
+
+                // 检测碰撞高亮
+                const dropRect = this.dom.dropZone.getBoundingClientRect();
+                const itemRect = this.dragItem.getBoundingClientRect();
+                
+                if (this.isColliding(dropRect, itemRect)) {
+                    this.dom.dropZone.classList.add('drag-over');
+                } else {
+                    this.dom.dropZone.classList.remove('drag-over');
+                }
+            }
+
+            handleDragEnd(e) {
+                if (!this.dragItem) return;
+
+                // 检测是否在 Drop Zone 内释放
+                const dropRect = this.dom.dropZone.getBoundingClientRect();
+                const itemRect = this.dragItem.getBoundingClientRect();
+
+                if (this.isColliding(dropRect, itemRect)) {
+                    this.checkAnswer(this.dragItem.dataset.word);
+                } else {
+                    // 回弹效果（简单的重置位置，暂不插值动画）
+                    this.resetDragItem();
+                }
+
+                this.dom.dropZone.classList.remove('drag-over');
+                this.dragItem = null;
+            }
+
+            isColliding(rect1, rect2) {
+                return !(rect1.right < rect2.left || 
+                         rect1.left > rect2.right || 
+                         rect1.bottom < rect2.top || 
+                         rect1.top > rect2.bottom);
+            }
+
+            resetDragItem() {
+                this.dragItem.classList.remove('dragging');
+                this.dragItem.style.left = '';
+                this.dragItem.style.top = '';
+                this.dragItem.style.width = '';
+            }
+
+            checkAnswer(word) {
+                const isCorrect = word === this.targetWord;
+                
+                if (isCorrect) {
+                    this.score += 10;
+                    this.updateScore();
+                    this.showFeedback(true);
+                    this.isPlaying = false; // 锁定
+                    setTimeout(() => {
+                        this.isPlaying = true;
+                        this.nextLevel();
+                    }, 800);
+                } else {
+                    this.showFeedback(false, "错误!");
+                    this.resetDragItem();
+                }
+            }
+
+            showFeedback(isCorrect, text) {
+                const msg = this.dom.feedback;
+                msg.textContent = isCorrect ? "✅ 正确!" : (text || "❌ 错误!");
+                msg.className = `feedback-msg ${isCorrect ? 'correct' : 'wrong'}`;
+                
+                // 动画结束后清理
+                setTimeout(() => {
+                    msg.className = 'feedback-msg';
+                }, 800);
+            }
+
+            updateScore() {
+                this.dom.score.textContent = this.score;
+            }
+
+            shuffleArray(array) {
+                for (let i = array.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [array[i], array[j]] = [array[j], array[i]];
+                }
+                return array;
+            }
+        }
+
+        const game = new Game();
+    </script>
+</body>
+</html>

@@ -1,0 +1,553 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>趣味单词连线</title>
+    <style>
+        :root {
+            --primary: #4facfe;
+            --secondary: #00f2fe;
+            --success: #2ecc71;
+            --error: #e74c3c;
+            --text: #333;
+            --bg: #f0f4f8;
+            --card-height: 70px; /* 增加了卡片本身的高度 */
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background: var(--bg);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            height: 100vh;
+            overflow: hidden;
+            user-select: none;
+        }
+
+        header {
+            margin-top: 15px;
+            text-align: center;
+            color: #555;
+            flex-shrink: 0; /* 防止头部被压缩 */
+        }
+
+        h1 { margin: 0; font-size: 24px; }
+        p { margin: 5px 0 0; color: #888; font-size: 14px; }
+
+        /* 游戏区域容器 */
+        .game-area {
+            position: relative;
+            width: 900px;
+            height: 700px; /* 显著增加了游戏区域高度，从 600px 增加到 700px */
+            background: #fff;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            margin-top: 20px;
+            display: flex;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        /* 三栏布局 */
+        .column {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between; /* 改为 space-between，让两端对齐，中间自动留出最大空隙 */
+            align-items: center;
+            height: 100%;
+            position: relative;
+            z-index: 2;
+            padding: 20px 0; /* 上下增加内边距，避免顶天立地 */
+            box-sizing: border-box;
+        }
+
+        /* 语音按钮 */
+        .voice-btn {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            border: none;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+            font-size: 20px;
+            cursor: pointer;
+            position: relative;
+            outline: none;
+            transition: transform 0.2s;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            flex-shrink: 0; /* 防止按钮变形 */
+        }
+
+        .voice-btn:active { transform: scale(0.9); }
+        
+        /* 波纹动画 */
+        .ripple {
+            position: absolute;
+            border-radius: 50%;
+            background: rgba(79, 172, 254, 0.6);
+            transform: scale(0);
+            animation: ripple-anim 0.6s linear;
+            pointer-events: none;
+        }
+        @keyframes ripple-anim {
+            to { transform: scale(4); opacity: 0; }
+        }
+
+        /* 卡片样式 */
+        .card {
+            background: #fff;
+            border: 2px solid #e1e8ed;
+            border-radius: 12px;
+            height: var(--card-height); /* 使用固定高度 */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 80%; /* 宽度保持不变 */
+            text-align: center;
+            font-size: 18px;
+            font-weight: 500;
+            color: var(--text);
+            cursor: default;
+            transition: all 0.3s;
+            position: relative;
+            flex-shrink: 0; /* 防止被挤压 */
+        }
+
+        .card:hover { border-color: var(--primary); }
+
+        /* 连接点（锚点） */
+        .dot {
+            width: 14px;
+            height: 14px;
+            background: #fff;
+            border: 3px solid #ccc;
+            border-radius: 50%;
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            cursor: crosshair;
+            transition: all 0.3s;
+            z-index: 5;
+        }
+        .dot:hover { border-color: var(--primary); transform: translateY(-50%) scale(1.2); }
+        .dot.active { background: var(--primary); border-color: var(--primary); }
+        .dot.connected { background: var(--success); border-color: var(--success); pointer-events: none; }
+
+        /* 各个列的点位置 - 稍微调整了一点距离 */
+        .col-voice .dot { right: -32px; } 
+        .col-word .dot-left { left: -32px; } 
+        .col-word .dot-right { right: -32px; } 
+        .col-meaning .dot { left: -32px; }
+
+        /* 画布层 */
+        canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+            pointer-events: none;
+        }
+
+        /* 提示框 */
+        #toast {
+            position: fixed;
+            bottom: 30px;
+            background: rgba(0,0,0,0.7);
+            color: #fff;
+            padding: 10px 20px;
+            border-radius: 30px;
+            font-size: 14px;
+            opacity: 0;
+            transition: opacity 0.3s;
+            z-index: 100;
+        }
+
+        /* 胜利弹窗 */
+        .modal {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(255,255,255,0.9);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 10;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.5s;
+        }
+        .modal.show { opacity: 1; pointer-events: auto; }
+        .modal h2 { font-size: 40px; color: var(--success); margin-bottom: 20px; }
+        .restart-btn {
+            padding: 10px 30px;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 25px;
+            font-size: 18px;
+            cursor: pointer;
+        }
+
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>英语单词连线挑战</h1>
+        <p>从左边开始，连中间英文，连右边中文。全对即获胜！</p>
+    </header>
+
+    <div class="game-area" id="gameArea">
+        <canvas id="canvas"></canvas>
+        
+        <!-- 左栏：语音 -->
+        <div class="column col-voice" id="colVoice"></div>
+        
+        <!-- 中栏：英文 -->
+        <div class="column col-word" id="colWord"></div>
+        
+        <!-- 右列：中文 -->
+        <div class="column col-meaning" id="colMeaning"></div>
+
+        <!-- 胜利界面 -->
+        <div class="modal" id="winModal">
+            <h2>🎉 完美通关！</h2>
+            <button class="restart-btn" onclick="initGame()">再玩一次</button>
+        </div>
+    </div>
+
+    <div id="toast"></div>
+
+    <script>
+        // 游戏数据配置
+        const data = [
+            { id: 1, en: "Apple", cn: "苹果" },
+            { id: 2, en: "Banana", cn: "香蕉" },
+            { id: 3, en: "Guitar", cn: "吉他" },
+            { id: 4, en: "Ocean", cn: "大海" },
+            { id: 5, en: "Dream", cn: "梦想" }
+        ];
+
+        // 状态变量
+        let currentPath = []; // 当前正在画的线段 [{dot, type, id, x, y}]
+        let fixedLines = []; // 已经固定成功的线 [{id, color, points:[]}]
+        
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        const gameArea = document.getElementById('gameArea');
+
+        // 初始化游戏
+        function initGame() {
+            // 清空状态
+            currentPath = [];
+            fixedLines = [];
+            document.getElementById('winModal').classList.remove('show');
+            
+            // 清空DOM
+            document.getElementById('colVoice').innerHTML = '';
+            document.getElementById('colWord').innerHTML = '';
+            document.getElementById('colMeaning').innerHTML = '';
+
+            // 1. 生成左列 (按顺序)
+            data.forEach(item => {
+                const wrapper = document.createElement('div');
+                wrapper.style.position = 'relative';
+                wrapper.style.width = '60px';
+                wrapper.style.height = 'var(--card-height)'; // 让按钮区域高度与卡片一致，对齐更美观
+                wrapper.style.display = 'flex';
+                wrapper.style.alignItems = 'center';
+                wrapper.style.justifyContent = 'center';
+                wrapper.style.flexShrink = '0'; // 防止被压缩
+
+                const btn = document.createElement('button');
+                btn.className = 'voice-btn';
+                btn.innerHTML = '🔊';
+                btn.onclick = (e) => playVoice(e, item.en);
+                
+                const dot = document.createElement('div');
+                dot.className = 'dot';
+                dot.dataset.type = 'start';
+                dot.dataset.id = item.id;
+                dot.onmousedown = (e) => handleMouseDown(e, dot, item.id, 'start');
+
+                wrapper.appendChild(btn);
+                wrapper.appendChild(dot);
+                document.getElementById('colVoice').appendChild(wrapper);
+            });
+
+            // 2. 生成中列 (乱序)
+            const shuffledEn = [...data].sort(() => Math.random() - 0.5);
+            shuffledEn.forEach(item => {
+                const card = document.createElement('div');
+                card.className = 'card';
+                card.textContent = item.en;
+
+                const dotIn = document.createElement('div');
+                dotIn.className = 'dot dot-left';
+                dotIn.dataset.type = 'middle';
+                dotIn.dataset.id = item.id;
+                
+                const dotOut = document.createElement('div');
+                dotOut.className = 'dot dot-right';
+                dotOut.dataset.type = 'middle-out'; 
+                dotOut.dataset.id = item.id;
+                
+                dotIn.onmouseup = (e) => handleMouseUp(e, dotIn, item.id, 'middle');
+                
+                card.appendChild(dotIn);
+                card.appendChild(dotOut);
+                document.getElementById('colWord').appendChild(card);
+            });
+
+            // 3. 生成右列 (乱序)
+            const shuffledCn = [...data].sort(() => Math.random() - 0.5);
+            shuffledCn.forEach(item => {
+                const card = document.createElement('div');
+                card.className = 'card';
+                card.textContent = item.cn;
+
+                const dot = document.createElement('div');
+                dot.className = 'dot';
+                dot.dataset.type = 'end';
+                dot.dataset.id = item.id;
+                
+                dot.onmouseup = (e) => handleMouseUp(e, dot, item.id, 'end');
+
+                card.appendChild(dot);
+                document.getElementById('colMeaning').appendChild(card);
+            });
+
+            resizeCanvas();
+        }
+
+        // 语音播放与波纹
+        function playVoice(e, text) {
+            const btn = e.target;
+            const ripple = document.createElement('span');
+            ripple.className = 'ripple';
+            btn.appendChild(ripple);
+            setTimeout(() => ripple.remove(), 600);
+
+            if ('speechSynthesis' in window) {
+                const u = new SpeechSynthesisUtterance(text);
+                u.lang = 'en-US';
+                window.speechSynthesis.speak(u);
+            } else {
+                showToast("你的浏览器不支持语音播放");
+            }
+        }
+
+        // 获取元素相对于 Canvas 的中心坐标
+        function getPos(el) {
+            const rect = el.getBoundingClientRect();
+            const areaRect = gameArea.getBoundingClientRect();
+            return {
+                x: rect.left - areaRect.left + rect.width / 2,
+                y: rect.top - areaRect.top + rect.height / 2
+            };
+        }
+
+        // --- 交互核心逻辑 ---
+
+        function handleMouseDown(e, dot, id, type) {
+            if (fixedLines.some(l => l.id === id)) return;
+
+            e.preventDefault();
+            isDragging = true;
+            const pos = getPos(dot);
+            
+            currentPath = [{
+                dot: dot,
+                type: type,
+                id: id,
+                x: pos.x,
+                y: pos.y
+            }];
+        }
+
+        function handleMouseUp(e, targetDot, targetId, targetType) {
+            if (!isDragging) return;
+            e.stopPropagation();
+
+            const lastPoint = currentPath[currentPath.length - 1];
+            let valid = false;
+
+            // 逻辑判断
+            if (currentPath.length === 1) {
+                // 1. 从左边开始，连到中间
+                if (lastPoint.type === 'start' && targetType === 'middle' && lastPoint.id === targetId) {
+                    valid = true;
+                    const pos = getPos(targetDot);
+                    currentPath.push({
+                        dot: targetDot,
+                        type: targetType,
+                        id: targetId,
+                        x: pos.x,
+                        y: pos.y
+                    });
+                    
+                    const card = targetDot.parentElement;
+                    const rightDot = card.querySelector('.dot-right');
+                    const rightPos = getPos(rightDot);
+                    currentPath.push({
+                        dot: rightDot,
+                        type: 'mid-transition',
+                        id: targetId,
+                        x: rightPos.x,
+                        y: rightPos.y
+                    });
+                    showToast("继续连右边！");
+                } else {
+                    failAction();
+                }
+            } else if (currentPath.length === 3) {
+                // 2. 从中间继续，连到右边
+                if (lastPoint.type === 'mid-transition' && targetType === 'end' && currentPath[0].id === targetId) {
+                    valid = true;
+                    const pos = getPos(targetDot);
+                    currentPath.push({
+                        dot: targetDot,
+                        type: targetType,
+                        id: targetId,
+                        y: pos.y,
+                        x: pos.x
+                    });
+                    successAction();
+                } else {
+                    failAction();
+                }
+            } else {
+                failAction();
+            }
+
+            if (!valid && currentPath.length > 0) {
+                // handle invalid cases
+            }
+        }
+
+        // 鼠标移动
+        let isDragging = false;
+        gameArea.addEventListener('mousemove', (e) => {
+            if (!isDragging || currentPath.length === 0) return;
+
+            const rect = gameArea.getBoundingClientRect();
+            const mouseX = e.clientX - rect.left;
+            const mouseY = e.clientY - rect.top;
+
+            draw();
+
+            // 绘制确定的线段
+            drawPath(currentPath, '#4facfe');
+
+            // 绘制跟随鼠标的最后一段
+            const last = currentPath[currentPath.length - 1];
+            ctx.beginPath();
+            ctx.moveTo(last.x, last.y);
+            ctx.lineTo(mouseX, mouseY);
+            ctx.strokeStyle = '#4facfe';
+            ctx.lineWidth = 4;
+            ctx.setLineDash([5, 5]); 
+            ctx.stroke();
+            ctx.setLineDash([]);
+        });
+
+        // 鼠标松开全局处理
+        window.addEventListener('mouseup', () => {
+            if (isDragging && currentPath.length > 0 && currentPath.length < 4) {
+                currentPath = [];
+                isDragging = false;
+                draw();
+            }
+        });
+
+        // 成功逻辑
+        function successAction() {
+            fixedLines.push({
+                id: currentPath[0].id,
+                points: [...currentPath],
+                color: '#2ecc71'
+            });
+            
+            const id = currentPath[0].id;
+            document.querySelectorAll(`[data-id="${id}"]`).forEach(el => {
+                el.classList.add('connected');
+                if(el.classList.contains('card')) el.style.color = '#2ecc71';
+            });
+
+            showToast("连接正确！");
+            
+            currentPath = [];
+            isDragging = false;
+            draw();
+
+            if (fixedLines.length === data.length) {
+                setTimeout(() => {
+                    document.getElementById('winModal').classList.add('show');
+                }, 500);
+            }
+        }
+
+        // 失败逻辑
+        function failAction() {
+            drawPath(currentPath, '#e74c3c');
+            showToast("连错了，再试一次！");
+            
+            setTimeout(() => {
+                currentPath = [];
+                isDragging = false;
+                draw();
+            }, 400);
+        }
+
+        // 绘图辅助函数
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            fixedLines.forEach(line => {
+                drawPath(line.points, line.color);
+            });
+        }
+
+        function drawPath(points, color) {
+            if (points.length < 2) return;
+
+            ctx.beginPath();
+            ctx.moveTo(points[0].x, points[0].y);
+            
+            for (let i = 1; i < points.length; i++) {
+                ctx.lineTo(points[i].x, points[i].y);
+            }
+            
+            ctx.strokeStyle = color;
+            ctx.lineWidth = 4;
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+            ctx.stroke();
+        }
+
+        function showToast(msg) {
+            const t = document.getElementById('toast');
+            t.textContent = msg;
+            t.style.opacity = 1;
+            setTimeout(() => t.style.opacity = 0, 2000);
+        }
+
+        function resizeCanvas() {
+            canvas.width = gameArea.offsetWidth;
+            canvas.height = gameArea.offsetHeight;
+            draw();
+        }
+        window.addEventListener('resize', resizeCanvas);
+
+        // 启动
+        initGame();
+
+    </script>
+</body>
+</html>

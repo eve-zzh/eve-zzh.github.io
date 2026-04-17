@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>单词真假判定 - 快问快答</title>
+    <style>
+        :root {
+            --primary-color: #2c3e50;
+            --accent-green: #27ae60;
+            --accent-red: #c0392b;
+            --bg-color: #ecf0f1;
+            --text-color: #34495e;
+            --card-bg: #ffffff;
+        }
+
+        * {
+            box-sizing: border-box;
+            user-select: none; /* 防止快速点击时选中文本 */
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+        }
+
+        /* 游戏主容器 */
+        #game-container {
+            width: 100%;
+            max-width: 600px;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            background: var(--bg-color);
+        }
+
+        /* 头部信息栏 */
+        header {
+            padding: 20px;
+            display: flex;
+            justify-content: space-between;
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: var(--primary-color);
+        }
+
+        .stat-box span {
+            color: var(--accent-red);
+        }
+
+        /* 游戏区域 */
+        #play-area {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            position: relative;
+        }
+
+        /* 单词卡片 */
+        .word-card {
+            background: var(--card-bg);
+            width: 100%;
+            padding: 40px 20px;
+            border-radius: 16px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            text-align: center;
+            margin-bottom: 40px;
+            transition: transform 0.1s;
+            z-index: 1;
+        }
+
+        .word-en {
+            font-size: 3rem;
+            font-weight: 800;
+            color: var(--primary-color);
+            margin-bottom: 10px;
+            letter-spacing: 1px;
+        }
+
+        .word-cn {
+            font-size: 2rem;
+            color: #7f8c8d;
+            font-weight: 500;
+        }
+
+        /* 按钮区域 */
+        .controls {
+            display: flex;
+            width: 100%;
+            gap: 20px;
+            padding: 0 20px 40px 20px;
+            z-index: 1;
+        }
+
+        .btn {
+            flex: 1;
+            border: none;
+            border-radius: 12px;
+            padding: 25px 0;
+            font-size: 1.8rem;
+            font-weight: bold;
+            color: white;
+            cursor: pointer;
+            transition: transform 0.1s, filter 0.1s;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .btn:active {
+            transform: scale(0.96);
+        }
+
+        .btn-true {
+            background-color: var(--accent-green);
+        }
+
+        .btn-false {
+            background-color: var(--accent-red);
+        }
+
+        /* --- 新增：反馈特效层 --- */
+        #feedback-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            pointer-events: none; /* 让点击穿透，不影响连续答题 */
+            z-index: 100; /* 确保在最上层 */
+        }
+
+        .feedback-icon {
+            font-size: 8rem;
+            opacity: 0;
+            transform: scale(0.5);
+            text-shadow: 0 10px 20px rgba(0,0,0,0.2);
+        }
+
+        /* 正确动画 */
+        .feedback-icon.correct {
+            color: var(--accent-green);
+            animation: correctPop 0.5s ease-out forwards;
+        }
+
+        /* 错误动画 */
+        .feedback-icon.wrong {
+            color: var(--accent-red);
+            animation: wrongShake 0.5s ease-out forwards;
+        }
+
+        @keyframes correctPop {
+            0% { opacity: 0; transform: scale(0.5) rotate(-10deg); }
+            50% { opacity: 1; transform: scale(1.2) rotate(0deg); }
+            70% { transform: scale(0.9); }
+            100% { opacity: 0; transform: scale(1.5) translateY(-50px); }
+        }
+
+        @keyframes wrongShake {
+            0% { opacity: 0; transform: translate(0, 0) scale(0.5); }
+            20% { opacity: 1; transform: translate(0, 0) scale(1.1); }
+            25% { transform: translate(-10px, 0) rotate(-5deg); }
+            45% { transform: translate(10px, 0) rotate(5deg); }
+            65% { transform: translate(-10px, 0) rotate(-5deg); }
+            85% { transform: translate(10px, 0) rotate(5deg); }
+            100% { opacity: 0; transform: translate(0, 0) scale(1); }
+        }
+
+        /* 页面状态切换 (开始/结束/游戏) */
+        .screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: var(--bg-color);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 200;
+            transition: opacity 0.3s;
+        }
+
+        .hidden {
+            opacity: 0;
+            pointer-events: none;
+            z-index: -1;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+
+        p.desc {
+            font-size: 1.1rem;
+            color: #7f8c8d;
+            margin-bottom: 40px;
+            text-align: center;
+            padding: 0 30px;
+        }
+
+        .start-btn {
+            padding: 15px 50px;
+            font-size: 1.5rem;
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            box-shadow: 0 5px 15px rgba(44, 62, 80, 0.3);
+        }
+
+        /* 移动端适配调整 */
+        @media (max-width: 480px) {
+            .word-en { font-size: 2.2rem; }
+            .word-cn { font-size: 1.5rem; }
+            .btn { font-size: 1.5rem; padding: 20px 0; }
+            h1 { font-size: 2rem; }
+            .feedback-icon { font-size: 6rem; }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="game-container">
+        
+        <!-- 开始界面 -->
+        <div id="start-screen" class="screen">
+            <h1>单词真假判定</h1>
+            <p class="desc">60秒快问快答<br>判断英文单词对应的中文释义是否正确</p>
+            <button class="start-btn" onclick="game.start()">开始挑战</button>
+        </div>
+
+        <!-- 游戏主界面 -->
+        <header>
+            <div class="stat-box">得分: <span id="score-display">0</span></div>
+            <div class="stat-box">时间: <span id="time-display">60</span>s</div>
+        </header>
+
+        <main id="play-area">
+            <!-- 反馈层 (新增) -->
+            <div id="feedback-overlay"></div>
+
+            <div class="word-card" id="card">
+                <div class="word-en" id="word-en">Apple</div>
+                <div class="word-cn" id="word-cn">苹果</div>
+            </div>
+
+            <div class="controls">
+                <button class="btn btn-false" id="btn-false" onclick="game.answer(false)">错</button>
+                <button class="btn btn-true" id="btn-true" onclick="game.answer(true)">对</button>
+            </div>
+        </main>
+
+        <!-- 结算界面 -->
+        <div id="end-screen" class="screen hidden">
+            <h1>时间到!</h1>
+            <p class="desc">你的最终得分是</p>
+            <h2 id="final-score" style="font-size: 4rem; margin: 0 0 40px 0; color: var(--primary-color);">0</h2>
+            <button class="start-btn" onclick="game.start()">再玩一次</button>
+        </div>
+
+    </div>
+
+    <script>
+        // 词库数据
+        const wordBank = [
+            { en: "Apple", cn: "苹果" },
+            { en: "Banana", cn: "香蕉" },
+            { en: "Computer", cn: "电脑" },
+            { en: "Phone", cn: "手机" },
+            { en: "Water", cn: "水" },
+            { en: "Book", cn: "书本" },
+            { en: "School", cn: "学校" },
+            { en: "Teacher", cn: "老师" },
+            { en: "Doctor", cn: "医生" },
+            { en: "Happy", cn: "快乐" },
+            { en: "Fast", cn: "快速" },
+            { en: "Cat", cn: "猫" },
+            { en: "Dog", cn: "狗" },
+            { en: "Bird", cn: "鸟" },
+            { en: "Red", cn: "红色" },
+            { en: "Blue", cn: "蓝色" },
+            { en: "Run", cn: "跑" },
+            { en: "Jump", cn: "跳" },
+            { en: "Eat", cn: "吃" },
+            { en: "Sleep", cn: "睡觉" },
+            { en: "Friend", cn: "朋友" },
+            { en: "Money", cn: "钱" },
+            { en: "Time", cn: "时间" },
+            { en: "Year", cn: "年" },
+            { en: "World", cn: "世界" }
+        ];
+
+        class Game {
+            constructor() {
+                this.score = 0;
+                this.timeLeft = 60;
+                this.isPlaying = false;
+                this.timerInterval = null;
+                
+                this.currentQuestion = {
+                    en: "",
+                    cn: "",
+                    isCorrect: false
+                };
+
+                this.dom = {
+                    startScreen: document.getElementById('start-screen'),
+                    endScreen: document.getElementById('end-screen'),
+                    score: document.getElementById('score-display'),
+                    time: document.getElementById('time-display'),
+                    finalScore: document.getElementById('final-score'),
+                    card: document.getElementById('card'),
+                    wordEn: document.getElementById('word-en'),
+                    wordCn: document.getElementById('word-cn'),
+                    feedbackOverlay: document.getElementById('feedback-overlay') // 新增
+                };
+
+                document.addEventListener('keydown', (e) => {
+                    if (!this.isPlaying) return;
+                    if (e.key === 'ArrowLeft') this.answer(false);
+                    if (e.key === 'ArrowRight') this.answer(true);
+                });
+            }
+
+            start() {
+                this.score = 0;
+                this.timeLeft = 60;
+                this.isPlaying = true;
+                
+                this.updateUI();
+                this.dom.startScreen.classList.add('hidden');
+                this.dom.endScreen.classList.add('hidden');
+                
+                this.nextQuestion();
+                this.startTimer();
+            }
+
+            startTimer() {
+                if (this.timerInterval) clearInterval(this.timerInterval);
+                this.timerInterval = setInterval(() => {
+                    this.timeLeft--;
+                    this.updateUI();
+                    if (this.timeLeft <= 0) {
+                        this.endGame();
+                    }
+                }, 1000);
+            }
+
+            nextQuestion() {
+                const correctIndex = Math.floor(Math.random() * wordBank.length);
+                const correctPair = wordBank[correctIndex];
+                const showTrue = Math.random() > 0.4;
+
+                let pairToDisplay;
+
+                if (showTrue) {
+                    pairToDisplay = {
+                        en: correctPair.en,
+                        cn: correctPair.cn,
+                        isCorrect: true
+                    };
+                } else {
+                    let randomOtherIndex;
+                    do {
+                        randomOtherIndex = Math.floor(Math.random() * wordBank.length);
+                    } while (randomOtherIndex === correctIndex);
+
+                    pairToDisplay = {
+                        en: correctPair.en,
+                        cn: wordBank[randomOtherIndex].cn,
+                        isCorrect: false
+                    };
+                }
+
+                this.currentQuestion = pairToDisplay;
+                this.renderCard();
+            }
+
+            renderCard() {
+                this.dom.wordEn.textContent = this.currentQuestion.en;
+                this.dom.wordCn.textContent = this.currentQuestion.cn;
+            }
+
+            // 触发特效方法 (新增)
+            triggerFeedback(isCorrect) {
+                // 清除之前的特效
+                this.dom.feedbackOverlay.innerHTML = '';
+                
+                // 创建新图标元素
+                const icon = document.createElement('div');
+                icon.classList.add('feedback-icon');
+                
+                if (isCorrect) {
+                    icon.innerHTML = '✅';
+                    icon.classList.add('correct');
+                } else {
+                    icon.innerHTML = '❌';
+                    icon.classList.add('wrong');
+                }
+
+                this.dom.feedbackOverlay.appendChild(icon);
+
+                // 动画结束后移除元素 (0.5秒后)
+                setTimeout(() => {
+                    if (this.dom.feedbackOverlay.contains(icon)) {
+                        this.dom.feedbackOverlay.removeChild(icon);
+                    }
+                }, 500);
+            }
+
+            answer(userSaidTrue) {
+                if (!this.isPlaying) return;
+                
+                const isUserCorrect = (userSaidTrue === this.currentQuestion.isCorrect);
+
+                // 触发特效
+                this.triggerFeedback(isUserCorrect);
+
+                if (isUserCorrect) {
+                    this.score++;
+                }
+
+                this.updateUI();
+                this.nextQuestion();
+            }
+
+            endGame() {
+                this.isPlaying = false;
+                clearInterval(this.timerInterval);
+                this.dom.finalScore.textContent = this.score;
+                this.dom.endScreen.classList.remove('hidden');
+            }
+
+            updateUI() {
+                this.dom.score.textContent = this.score;
+                this.dom.time.textContent = this.timeLeft;
+            }
+        }
+
+        const game = new Game();
+    </script>
+</body>
+</html>

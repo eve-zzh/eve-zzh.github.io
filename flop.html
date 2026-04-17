@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>单词翻牌挑战</title>
+    <style>
+        :root {
+            --bg-color: #f0f2f5;
+            --card-back: #34495e;
+            --card-correct: #2ecc71; /* 答对 - 绿色 */
+            --card-passed: #f39c12;  /* 跳过 - 橙色 */
+            --text-main: #2c3e50;
+            --accent: #9b59b6;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        header {
+            background: white;
+            padding: 10px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            z-index: 10;
+        }
+        .header-title { font-weight: bold; color: #555; }
+        .score-box { font-size: 1.1rem; font-weight: bold; color: var(--text-main); }
+        .score-val { color: var(--card-correct); font-size: 1.3rem; }
+
+        main {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            position: relative;
+            overflow-y: auto;
+        }
+
+        .grid-container {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 12px;
+            width: 100%;
+            max-width: 600px;
+        }
+
+        /* 卡片样式 */
+        .card {
+            background-color: transparent;
+            cursor: pointer;
+            position: relative;
+            height: 100px;
+            perspective: 1000px;
+            border-radius: 10px;
+        }
+
+        .card-inner {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            text-align: center;
+            transition: transform 0.6s;
+            transform-style: preserve-3d;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            border-radius: 10px;
+        }
+
+        .card.flipped .card-inner {
+            transform: rotateY(180deg);
+        }
+
+        .card-face {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            backface-visibility: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            border-radius: 10px;
+            font-weight: bold;
+            user-select: none;
+        }
+
+        /* 背面（未翻开） */
+        .card-front {
+            background: var(--card-back);
+            color: white;
+            font-size: 1.1rem;
+            transform: rotateY(0deg);
+        }
+
+        /* 正面（翻开） */
+        .card-back {
+            transform: rotateY(180deg);
+            color: white;
+            flex-direction: column;
+            padding: 5px;
+            box-sizing: border-box;
+        }
+        
+        /* 状态颜色 */
+        .card-back.correct { background: var(--card-correct); }
+        .card-back.passed { background: var(--card-passed); }
+
+        /* 翻牌上的小图标 */
+        .status-icon { font-size: 1.5rem; margin-bottom: 5px; }
+
+        /* 输入弹窗 */
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.6);
+            z-index: 100;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            opacity: 0; pointer-events: none;
+            transition: opacity 0.3s;
+        }
+        .modal-overlay.active { opacity: 1; pointer-events: auto; }
+
+        .input-card {
+            background: white;
+            padding: 25px;
+            border-radius: 15px;
+            width: 85%;
+            max-width: 350px;
+            text-align: center;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+            animation: popUp 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        .input-title { font-size: 1.2rem; margin-bottom: 15px; color: #333; }
+        
+        #answer-input {
+            width: 100%;
+            padding: 12px;
+            font-size: 1.2rem;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            text-align: center;
+            outline: none;
+        }
+        #answer-input.error { border-color: var(--card-back); animation: shake 0.4s; }
+
+        .modal-btns { display: flex; gap: 10px; justify-content: center; }
+        .btn {
+            padding: 10px 20px;
+            border: none; border-radius: 8px;
+            font-size: 1rem; cursor: pointer; color: white; font-weight: bold;
+        }
+        .btn-submit { background: var(--card-correct); flex: 2; }
+        .btn-pass { background: #95a5a6; flex: 1; }
+
+        @keyframes popUp { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+        @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-5px); } 75% { transform: translateX(5px); } }
+
+        /* 底部数字人 */
+        footer {
+            height: 100px;
+            background: white;
+            border-top: 1px solid #eee;
+            display: flex;
+            align-items: center;
+            padding: 0 20px;
+        }
+        .avatar-container { display: flex; align-items: center; gap: 15px; max-width: 100%; }
+        .avatar {
+            width: 60px; height: 60px; border-radius: 50%;
+            background-image: url('https://api.dicebear.com/7.x/bottts/svg?seed=Teacher');
+            background-size: cover; border: 3px solid var(--accent);
+            flex-shrink: 0;
+        }
+        .avatar.talking { animation: bounce 0.5s infinite alternate; }
+        @keyframes bounce { from { transform: translateY(0); } to { transform: translateY(-5px); } }
+
+        .speech-bubble {
+            background: var(--text-main); color: white; padding: 10px 15px;
+            border-radius: 20px; font-size: 0.95rem; position: relative;
+            opacity: 0; transition: opacity 0.3s; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+        .speech-bubble.show { opacity: 1; }
+        .speech-bubble::before {
+            content: ''; position: absolute; left: -8px; top: 50%; transform: translateY(-50%);
+            border-width: 8px 8px 8px 0; border-style: solid; border-color: transparent var(--text-main) transparent transparent;
+        }
+
+        @media (max-width: 480px) {
+            .grid-container { grid-template-columns: repeat(3, 1fr); gap: 8px; }
+            .card { height: 80px; }
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="header-title">单词翻牌挑战</div>
+        <div class="score-box">得分: <span class="score-val" id="score">0</span></div>
+    </header>
+
+    <main>
+        <div class="grid-container" id="grid">
+            <!-- JS生成卡片 -->
+        </div>
+    </main>
+
+    <!-- 输入弹窗 -->
+    <div class="modal-overlay" id="input-modal">
+        <div class="input-card">
+            <div class="input-title">请拼写: <span id="modal-word-en" style="color:var(--accent); font-weight:bold;"></span></div>
+            <input type="text" id="answer-input" placeholder="输入中文..." autocomplete="off">
+            <div class="modal-btns">
+                <button class="btn btn-pass" onclick="game.passCard()">过</button>
+                <button class="btn btn-submit" onclick="game.submitAnswer()">确定</button>
+            </div>
+        </div>
+    </div>
+
+    <footer>
+        <div class="avatar-container">
+            <div class="avatar" id="mascot"></div>
+            <div class="speech-bubble" id="speech-bubble">点击卡片，拼写正确才能翻开哦！</div>
+        </div>
+    </footer>
+
+    <script>
+        // 单词数据
+        const wordData = [
+            { en: "Apple", cn: "苹果" },
+            { en: "Banana", cn: "香蕉" },
+            { en: "Cherry", cn: "樱桃" },
+            { en: "Durian", cn: "榴莲" },
+            { en: "Grape", cn: "葡萄" },
+            { en: "Lemon", cn: "柠檬" },
+            { en: "Mango", cn: "芒果" },
+            { en: "Melon", cn: "甜瓜" },
+            { en: "Olive", cn: "橄榄" },
+            { en: "Peach", cn: "桃子" },
+            { en: "Pear", cn: "梨" },
+            { en: "Plum", cn: "李子" }
+        ];
+
+        class Game {
+            constructor() {
+                this.score = 0;
+                this.currentCard = null;
+                this.currentCardElement = null;
+
+                this.dom = {
+                    grid: document.getElementById('grid'),
+                    score: document.getElementById('score'),
+                    modal: document.getElementById('input-modal'),
+                    modalEn: document.getElementById('modal-word-en'),
+                    input: document.getElementById('answer-input'),
+                    mascot: document.getElementById('mascot'),
+                    bubble: document.getElementById('speech-bubble')
+                };
+
+                this.init();
+
+                this.dom.input.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter') this.submitAnswer();
+                });
+            }
+
+            init() {
+                const shuffled = [...wordData].sort(() => 0.5 - Math.random());
+                this.dom.grid.innerHTML = '';
+
+                shuffled.forEach(word => {
+                    const card = document.createElement('div');
+                    card.className = 'card';
+                    card.innerHTML = `
+                        <div class="card-inner">
+                            <div class="card-face card-front">
+                                <div>${word.en}</div>
+                                <div style="font-size:0.8rem; opacity:0.7; margin-top:2px;">?</div>
+                            </div>
+                            <div class="card-face card-back">
+                                <div class="status-icon"></div>
+                                <div class="cn-text"></div>
+                            </div>
+                        </div>
+                    `;
+                    card.onclick = () => this.openCard(card, word);
+                    this.dom.grid.appendChild(card);
+                });
+            }
+
+            openCard(cardEl, wordData) {
+                if (cardEl.classList.contains('flipped')) return; 
+                this.currentCardElement = cardEl;
+                this.currentCard = wordData;
+
+                this.dom.modalEn.textContent = wordData.en;
+                this.dom.input.value = '';
+                this.dom.input.classList.remove('error');
+                this.dom.modal.classList.add('active');
+                this.dom.input.focus();
+            }
+
+            closeModal() {
+                this.dom.modal.classList.remove('active');
+                this.currentCard = null;
+                this.currentCardElement = null;
+            }
+
+            submitAnswer() {
+                const val = this.dom.input.value.trim();
+                if (!val) return;
+
+                if (val === this.currentCard.cn) {
+                    // 答对了
+                    this.revealCard('correct');
+                    this.closeModal();
+                    this.speak("太棒了！这个词你完全掌握了。");
+                } else {
+                    // 答错
+                    this.dom.input.classList.add('error');
+                    this.triggerMascot();
+                    this.speak("不对哦，再仔细想一想。");
+                }
+            }
+
+            passCard() {
+                // 选择跳过：不扣分，也不加分，直接显示答案（橙色）
+                this.revealCard('passed');
+                this.closeModal();
+                this.triggerMascot();
+                this.speak("没关系，先把它记下来，下次一定能行。");
+            }
+
+            revealCard(status) {
+                const inner = this.currentCardElement.querySelector('.card-inner');
+                const back = this.currentCardElement.querySelector('.card-back');
+                const icon = back.querySelector('.status-icon');
+                const text = back.querySelector('.cn-text');
+
+                this.currentCardElement.classList.add('flipped');
+                
+                back.className = `card-face card-back ${status}`;
+                text.textContent = this.currentCard.cn;
+
+                if (status === 'correct') {
+                    icon.textContent = '✅';
+                    this.score += 10;
+                } else if (status === 'passed') {
+                    icon.textContent = '⏭';
+                }
+
+                this.dom.score.textContent = this.score;
+            }
+
+            triggerMascot() {
+                this.dom.mascot.classList.add('talking');
+                setTimeout(() => this.dom.mascot.classList.remove('talking'), 2000);
+            }
+
+            speak(text) {
+                this.dom.bubble.classList.remove('show');
+                setTimeout(() => {
+                    this.dom.bubble.textContent = text;
+                    this.dom.bubble.classList.add('show');
+                }, 100);
+            }
+        }
+
+        const game = new Game();
+    </script>
+</body>
+</html>

@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>听音选词</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body.flash {
+            animation: flash-red 0.3s ease-in-out;
+        }
+        @keyframes flash-red {
+            0% { background-color: #f8fafc; }
+            50% { background-color: #fee2e2; }
+            100% { background-color: #f8fafc; }
+        }
+        .btn-correct {
+            background-color: #22c55e !important;
+            color: #ffffff !important;
+        }
+        .btn-wrong {
+            background-color: #ef4444 !important;
+            color: #ffffff !important;
+        }
+    </style>
+</head>
+<body class="min-h-screen bg-slate-50 text-slate-800 select-none">
+    <div class="max-w-3xl mx-auto px-6 py-8">
+        <div class="flex items-center justify-between">
+            <div class="text-lg font-semibold">得分：<span id="score">0</span></div>
+            <div class="text-lg font-semibold">生命值：<span id="lives">❤❤❤</span></div>
+        </div>
+
+        <div class="mt-12 flex justify-center">
+            <button id="play-btn" class="px-10 py-6 text-xl font-semibold bg-indigo-600 text-white rounded-2xl shadow-lg hover:bg-indigo-700 active:scale-95 transition">
+                播放声音
+            </button>
+        </div>
+
+        <div class="mt-10 grid grid-cols-1 gap-6 md:grid-cols-2">
+            <div>
+                <div class="text-sm text-slate-500 mb-3">选择正确的单词</div>
+                <div id="word-options" class="grid grid-cols-2 gap-3"></div>
+            </div>
+            <div>
+                <div class="text-sm text-slate-500 mb-3">选择正确的意思</div>
+                <div id="meaning-options" class="grid grid-cols-2 gap-3"></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="game-over" class="fixed inset-0 bg-black/40 hidden items-center justify-center">
+        <div class="bg-white rounded-2xl px-8 py-6 text-center shadow-xl">
+            <div class="text-2xl font-bold mb-2">游戏结束</div>
+            <div class="text-slate-600 mb-4">最终得分：<span id="final-score">0</span></div>
+            <button id="restart-btn" class="px-6 py-3 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition">
+                重新开始
+            </button>
+        </div>
+    </div>
+
+    <script>
+        const data = [
+            { en: "apple", cn: "苹果" },
+            { en: "banana", cn: "香蕉" },
+            { en: "computer", cn: "电脑" },
+            { en: "library", cn: "图书馆" },
+            { en: "sunshine", cn: "阳光" },
+            { en: "window", cn: "窗户" },
+            { en: "teacher", cn: "老师" },
+            { en: "camera", cn: "相机" },
+            { en: "garden", cn: "花园" },
+            { en: "pencil", cn: "铅笔" }
+        ];
+
+        const scoreEl = document.getElementById("score");
+        const livesEl = document.getElementById("lives");
+        const playBtn = document.getElementById("play-btn");
+        const wordOptionsEl = document.getElementById("word-options");
+        const meaningOptionsEl = document.getElementById("meaning-options");
+        const gameOverEl = document.getElementById("game-over");
+        const finalScoreEl = document.getElementById("final-score");
+        const restartBtn = document.getElementById("restart-btn");
+
+        let score = 0;
+        let lives = 3;
+        let queue = [];
+        let current = null;
+        let phase = "idle";
+
+        function shuffle(list) {
+            return [...list].sort(() => Math.random() - 0.5);
+        }
+
+        function updateLives() {
+            livesEl.textContent = "❤".repeat(lives);
+        }
+
+        function updateScore() {
+            scoreEl.textContent = String(score);
+        }
+
+        function speak(text) {
+            if ("speechSynthesis" in window) {
+                const utterance = new SpeechSynthesisUtterance(text);
+                utterance.lang = "en-US";
+                window.speechSynthesis.cancel();
+                window.speechSynthesis.speak(utterance);
+            }
+        }
+
+        function createOptionButton(label, type, value) {
+            const btn = document.createElement("button");
+            btn.className = "px-4 py-3 rounded-xl bg-white border border-slate-200 shadow-sm hover:bg-slate-50 transition text-sm font-semibold";
+            btn.textContent = label;
+            btn.dataset.type = type;
+            btn.dataset.value = value;
+            return btn;
+        }
+
+        function setButtonsEnabled(container, enabled) {
+            container.querySelectorAll("button").forEach((btn) => {
+                btn.disabled = !enabled;
+                btn.classList.toggle("opacity-40", !enabled);
+                btn.classList.toggle("cursor-not-allowed", !enabled);
+            });
+        }
+
+        function buildOptions() {
+            const choices = shuffle(data.filter(item => item.en !== current.en)).slice(0, 3);
+            const mixed = shuffle([current, ...choices]);
+
+            wordOptionsEl.innerHTML = "";
+            meaningOptionsEl.innerHTML = "";
+
+            mixed.forEach((item) => {
+                const wordBtn = createOptionButton(item.en, "word", item.en);
+                const meanBtn = createOptionButton(item.cn, "meaning", item.en);
+                wordOptionsEl.appendChild(wordBtn);
+                meaningOptionsEl.appendChild(meanBtn);
+            });
+
+            setButtonsEnabled(wordOptionsEl, false);
+            setButtonsEnabled(meaningOptionsEl, false);
+        }
+
+        function nextQuestion() {
+            if (queue.length === 0) {
+                queue = shuffle(data);
+            }
+            current = queue.shift();
+            phase = "idle";
+            buildOptions();
+        }
+
+        function flashError() {
+            document.body.classList.remove("flash");
+            void document.body.offsetWidth;
+            document.body.classList.add("flash");
+        }
+
+        function handleWrong(btn) {
+            btn.classList.add("btn-wrong");
+            flashError();
+            lives -= 1;
+            updateLives();
+            if (navigator.vibrate) {
+                navigator.vibrate(200);
+            }
+            setTimeout(() => btn.classList.remove("btn-wrong"), 500);
+            if (lives <= 0) {
+                endGame();
+            }
+        }
+
+        function endGame() {
+            finalScoreEl.textContent = String(score);
+            gameOverEl.classList.remove("hidden");
+            gameOverEl.classList.add("flex");
+            setButtonsEnabled(wordOptionsEl, false);
+            setButtonsEnabled(meaningOptionsEl, false);
+            playBtn.disabled = true;
+            playBtn.classList.add("opacity-50", "cursor-not-allowed");
+        }
+
+        function restartGame() {
+            score = 0;
+            lives = 3;
+            queue = shuffle(data);
+            updateScore();
+            updateLives();
+            gameOverEl.classList.add("hidden");
+            gameOverEl.classList.remove("flex");
+            playBtn.disabled = false;
+            playBtn.classList.remove("opacity-50", "cursor-not-allowed");
+            nextQuestion();
+        }
+
+        playBtn.addEventListener("click", () => {
+            if (!current || phase === "meaning") {
+                speak(current ? current.en : "");
+                return;
+            }
+            speak(current.en);
+            phase = "word";
+            setButtonsEnabled(wordOptionsEl, true);
+        });
+
+        wordOptionsEl.addEventListener("click", (event) => {
+            const btn = event.target.closest("button");
+            if (!btn || phase !== "word") return;
+            if (btn.dataset.value === current.en) {
+                btn.classList.add("btn-correct");
+                phase = "meaning";
+                setButtonsEnabled(wordOptionsEl, false);
+                setButtonsEnabled(meaningOptionsEl, true);
+            } else {
+                handleWrong(btn);
+                btn.disabled = true;
+                btn.classList.add("opacity-40", "cursor-not-allowed");
+            }
+        });
+
+        meaningOptionsEl.addEventListener("click", (event) => {
+            const btn = event.target.closest("button");
+            if (!btn || phase !== "meaning") return;
+            if (btn.dataset.value === current.en) {
+                btn.classList.add("btn-correct");
+                score += 10;
+                updateScore();
+                setButtonsEnabled(meaningOptionsEl, false);
+                setTimeout(() => {
+                    nextQuestion();
+                }, 500);
+            } else {
+                handleWrong(btn);
+                btn.disabled = true;
+                btn.classList.add("opacity-40", "cursor-not-allowed");
+            }
+        });
+
+        restartBtn.addEventListener("click", restartGame);
+
+        restartGame();
+    </script>
+</body>
+</html>

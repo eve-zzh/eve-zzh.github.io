@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>Gemini 词汇竞技场 - 三合一版</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;500;900&display=swap');
+        
+        body { 
+            font-family: 'Inter', sans-serif; 
+            background-color: #F2F2F0; 
+            color: #1C1C1E;
+            overflow: hidden;
+            transition: all 0.2s ease;
+        }
+
+        /* 顶部极限倒计时 */
+        #timerBar { position: fixed; top: 0; left: 0; width: 100%; height: 4px; background: #E5E5E0; z-index: 1000; }
+        #timerFill { width: 100%; height: 100%; background: #1C1C1E; transition: width 0.1s linear; }
+
+        /* 单词槽位 */
+        .slot {
+            width: 2.5rem; height: 4rem;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 2rem; font-weight: 600;
+            border-bottom: 3px solid #D1D1CB;
+            transition: all 0.2s ease; margin: 0 0.2rem;
+            text-transform: lowercase;
+        }
+        .slot.active { border-bottom-color: #1C1C1E; transform: translateY(-2px); }
+        .slot.hinted { color: #A1A19A; border-bottom-style: dashed; }
+
+        /* 激励特效：对号勋章 (右上角) */
+        #fxBadge {
+            position: fixed; top: 40px; right: 40px;
+            opacity: 0; transform: scale(0.5);
+            transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        #fxBadge.show { opacity: 1; transform: scale(1.2); }
+
+        /* 10连对全屏 */
+        .perfect-mode { background-color: #1C1C1E !important; color: #F2F2F0 !important; }
+        .body-impact { animation: impact 0.4s ease-out; }
+        @keyframes impact { 0% { transform: scale(1); } 50% { transform: scale(0.95); } 100% { transform: scale(1); } }
+
+        .shake { animation: shake 0.4s ease; }
+        @keyframes shake { 0%, 100% { transform: translateX(0); } 20% { transform: translateX(-10px); } 80% { transform: translateX(10px); } }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col items-center justify-center p-6">
+
+    <div id="timerBar"><div id="timerFill"></div></div>
+
+    <div id="fxBadge">
+        <svg width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+            <polyline points="22 4 12 14.01 9 11.01"></polyline>
+        </svg>
+    </div>
+
+    <div class="relative flex flex-col items-center w-full max-w-2xl">
+        <div id="chinese" class="text-2xl font-bold mb-4 tracking-tight text-[#444446]">准备挑战</div>
+        <div class="mb-12 flex items-center gap-2 text-[#A1A19A]">
+            <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24"><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10zm0-2a8 8 0 1 0 0-16 8 8 0 0 0 0 16zM10.5 8.5l5 3.5-5 3.5v-7z"/></svg>
+            <span class="text-[10px] uppercase tracking-widest font-bold">Auto-Audio On</span>
+        </div>
+
+        <div class="flex h-20 items-center justify-center" id="inputRow"></div>
+
+        <div class="mt-24 flex flex-col items-center gap-4">
+            <div id="comboDisplay" class="text-xs font-black tracking-[0.5em] uppercase opacity-30">Combo 0</div>
+            <div class="flex gap-10 text-[9px] font-bold uppercase tracking-widest opacity-40">
+                <span>Ctrl / Re-play Voice</span>
+                <span>Space / Hint</span>
+                <span>Shift+Enter / Skip</span>
+            </div>
+        </div>
+    </div>
+
+    <input type="text" id="masterInput" class="opacity-0 absolute" autofocus autocomplete="off">
+
+    <script>
+        const words = [
+            {en: "challenge", cn: "挑战"}, {en: "absolute", cn: "绝对的"},
+            {en: "sequence", cn: "顺序"}, {en: "velocity", cn: "速度"},
+            {en: "harmony", cn: "和谐"}, {en: "quantity", cn: "数量"},
+            {en: "broadcast", cn: "广播"}, {en: "parallel", cn: "平行的"},
+            {en: "vertical", cn: "垂直的"}, {en: "horizon", cn: "地平线"},
+            {en: "measure", cn: "测量"}, {en: "internal", cn: "内部的"}
+        ];
+
+        let index = 0, userInput = "", hints = 0, combo = 0, timeLeft = 100, timer = null;
+        const masterInput = document.getElementById('masterInput');
+        const inputRow = document.getElementById('inputRow');
+        const fxBadge = document.getElementById('fxBadge');
+        const comboDisplay = document.getElementById('comboDisplay');
+
+        // 语音引擎
+        function speak(text) {
+            const msg = new SpeechSynthesisUtterance(text);
+            msg.lang = 'en-US';
+            msg.rate = 0.9;
+            window.speechSynthesis.cancel();
+            window.speechSynthesis.speak(msg);
+        }
+
+        function init() {
+            if (index >= words.length) {
+                document.getElementById('chinese').innerText = "挑战结束";
+                inputRow.innerHTML = "FINISH";
+                return;
+            }
+            userInput = ""; hints = 0; masterInput.value = "";
+            document.getElementById('chinese').innerText = words[index].cn;
+            
+            // 语音先行
+            speak(words[index].en);
+
+            inputRow.innerHTML = "";
+            for (let i = 0; i < words[index].en.length; i++) {
+                const d = document.createElement('div');
+                d.className = "slot"; d.id = `s-${i}`;
+                inputRow.appendChild(d);
+            }
+            startTimer();
+            render();
+        }
+
+        function startTimer() {
+            clearInterval(timer);
+            timeLeft = 100;
+            timer = setInterval(() => {
+                timeLeft -= 1.0; 
+                document.getElementById('timerFill').style.width = timeLeft + "%";
+                if (timeLeft <= 0) { combo = 0; updateUI(); document.body.classList.add('shake'); setTimeout(()=> {document.body.classList.remove('shake'); init();}, 400); }
+            }, 100);
+        }
+
+        function render() {
+            const word = words[index].en;
+            for (let i = 0; i < word.length; i++) {
+                const el = document.getElementById(`s-${i}`);
+                if (!el) continue;
+                el.innerText = i < hints ? word[i] : (userInput[i] || "");
+                el.className = `slot ${i === userInput.length ? 'active' : ''} ${i < hints ? 'hinted' : ''}`;
+            }
+        }
+
+        function updateUI() {
+            comboDisplay.innerText = `Combo ${combo}`;
+        }
+
+        function triggerSuccess() {
+            clearInterval(timer);
+            combo++;
+            updateUI();
+
+            // 反馈特效
+            fxBadge.classList.add('show');
+            if (combo >= 10) {
+                document.body.classList.add('perfect-mode', 'body-impact');
+                setTimeout(() => document.body.classList.remove('perfect-mode'), 150);
+            }
+            
+            setTimeout(() => {
+                fxBadge.classList.remove('show');
+                document.body.classList.remove('body-impact');
+                index++;
+                init();
+            }, 800);
+        }
+
+        masterInput.addEventListener('input', (e) => {
+            userInput = e.target.value.toLowerCase().replace(/[^a-z]/g, '').slice(0, words[index].en.length);
+            render();
+            if (userInput === words[index].en) triggerSuccess();
+        });
+
+        window.addEventListener('keydown', (e) => {
+            if (e.key === ' ') { // 空格提示
+                e.preventDefault();
+                if (hints < words[index].en.length) {
+                    hints++; userInput = words[index].en.slice(0, hints);
+                    masterInput.value = userInput; render();
+                }
+            } else if (e.key === 'Control') { // 重播语音
+                speak(words[index].en);
+            } else if (e.key === 'Enter' && e.shiftKey) { // 跳过
+                combo = 0; updateUI(); index++; init();
+            }
+        });
+
+        document.addEventListener('click', () => masterInput.focus());
+        init();
+    </script>
+</body>
+</html>

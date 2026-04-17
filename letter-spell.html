@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>字母拼读游戏 - Letter Spell</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Segoe UI', 'PingFang SC', sans-serif;
+      min-height: 100vh;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 20px;
+    }
+    h1 {
+      color: white;
+      margin-bottom: 10px;
+      text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+    }
+    .controls {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 24px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+    button {
+      padding: 10px 20px;
+      font-size: 16px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      background: white;
+      color: #667eea;
+      font-weight: 600;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 16px rgba(0,0,0,0.2);
+    }
+    button:active { transform: translateY(0); }
+    button:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none;
+    }
+    .game-area {
+      position: relative;
+      width: 100%;
+      max-width: 600px;
+      height: 400px;
+      background: rgba(255,255,255,0.95);
+      border-radius: 16px;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+    }
+    .letter {
+      position: absolute;
+      width: 48px;
+      height: 48px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+      font-weight: bold;
+      color: #667eea;
+      background: white;
+      border: 3px solid #667eea;
+      border-radius: 12px;
+      cursor: pointer;
+      transition: all 0.2s;
+      box-shadow: 0 4px 12px rgba(102,126,234,0.3);
+    }
+    .letter:hover {
+      transform: scale(1.1);
+      background: #f0f4ff;
+      box-shadow: 0 6px 16px rgba(102,126,234,0.4);
+    }
+    .letter.correct {
+      background: #48bb78;
+      border-color: #38a169;
+      color: white;
+      cursor: default;
+    }
+    .letter.wrong {
+      animation: shake 0.4s;
+    }
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      25% { transform: translateX(-8px); }
+      75% { transform: translateX(8px); }
+    }
+    .status {
+      margin-top: 16px;
+      color: white;
+      font-size: 18px;
+      min-height: 28px;
+    }
+    .success { color: #68d391; font-weight: bold; }
+  </style>
+</head>
+<body>
+  <h1>🔤 字母拼读游戏</h1>
+  <p style="color: rgba(255,255,255,0.9); margin-bottom: 20px;">听发音，按顺序点击字母拼出单词</p>
+
+  <div class="controls">
+    <button id="newWord">新单词</button>
+    <button id="playWord">🔊 播放单词发音</button>
+  </div>
+
+  <div class="game-area" id="gameArea"></div>
+  <div class="status" id="status"></div>
+
+  <script>
+    const synth = window.speechSynthesis;
+    const words = ['cat', 'dog', 'sun', 'hat', 'run', 'red', 'pen', 'cup', 'bed', 'pig'];
+    let currentWord = '';
+    let letterCount = 0;
+    let letterPositions = [];
+
+    function speakLetter(letter) {
+      if (!synth) return;
+      const u = new SpeechSynthesisUtterance(letter.toLowerCase());
+      u.lang = 'en-US';
+      u.rate = 0.85;
+      synth.cancel();
+      synth.speak(u);
+    }
+
+    function speakWord(word, slow = true) {
+      if (!synth) return;
+      const u = new SpeechSynthesisUtterance(word);
+      u.lang = 'en-US';
+      u.rate = slow ? 0.55 : 1;
+      synth.cancel();
+      synth.speak(u);
+    }
+
+    function randomPosition(container) {
+      const w = container.clientWidth - 60;
+      const h = container.clientHeight - 60;
+      return {
+        left: 20 + Math.random() * w + 'px',
+        top: 20 + Math.random() * h + 'px'
+      };
+    }
+
+    function startGame() {
+      const area = document.getElementById('gameArea');
+      const status = document.getElementById('status');
+      area.innerHTML = '';
+      status.innerHTML = '';
+      status.className = 'status';
+
+      currentWord = words[Math.floor(Math.random() * words.length)];
+      letterCount = 0;
+      const letters = currentWord.split('');
+
+      letterPositions = letters.map(() => randomPosition(area));
+
+      letters.forEach((letter, i) => {
+        const el = document.createElement('div');
+        el.className = 'letter';
+        el.textContent = letter.toUpperCase();
+        el.style.left = letterPositions[i].left;
+        el.style.top = letterPositions[i].top;
+        el.dataset.index = i;
+        el.dataset.letter = letter;
+
+        el.addEventListener('click', () => {
+          if (el.classList.contains('correct')) return;
+
+          const expectedIndex = letterCount;
+          const clickedIndex = parseInt(el.dataset.index);
+
+          if (clickedIndex === expectedIndex) {
+            letterCount++;
+            el.classList.add('correct');
+            speakLetter(letter);
+
+            if (letterCount === letters.length) {
+              status.textContent = '✓ 太棒了！单词拼写正确！';
+              status.classList.add('success');
+            }
+          } else {
+            el.classList.add('wrong');
+            setTimeout(() => el.classList.remove('wrong'), 400);
+          }
+        });
+
+        area.appendChild(el);
+      });
+
+      setTimeout(() => speakWord(currentWord), 300);
+    }
+
+    document.getElementById('newWord').onclick = startGame;
+    document.getElementById('playWord').onclick = () => {
+      if (currentWord) speakWord(currentWord);
+    };
+
+    startGame();
+  </script>
+</body>
+</html>
