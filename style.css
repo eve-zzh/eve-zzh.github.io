@@ -1,89 +1,295 @@
+/* ===== 变量 ===== */
 :root {
-    --primary: #000;
-    --secondary: #666;
-    --bg: #fff;
-    --line: #eee;
+    --primary: #0a0a0a;
+    --secondary: #555;
+    --bg: #f8f7f4;
+    --card-bg: #ffffff;
+    --accent: #6c63ff;
+    --accent2: #ff6584;
+    --line: #e8e8e8;
+    --shadow: 0 4px 24px rgba(0,0,0,0.07);
+    --shadow-hover: 0 12px 40px rgba(108,99,255,0.18);
+    --radius: 16px;
 }
+
+/* ===== 重置 & 基础 ===== */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 body {
     background-color: var(--bg);
     color: var(--primary);
     font-family: -apple-system, "Inter", "Helvetica Neue", Arial, sans-serif;
-    margin: 0;
-    /* 确保内容在大屏上也是从上到下排布 */
-    display: block; 
+    min-height: 100vh;
+    overflow-x: hidden;
 }
 
+/* ===== 背景画布 ===== */
+#bg-canvas {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0.45;
+}
+
+/* ===== 主容器 ===== */
 .container {
-    max-width: 600px; /* 限制宽度，保持阅读舒适度 */
-    margin: 100px auto; /* 增加上下留白，更有呼吸感 */
-    padding: 0 40px;
+    position: relative;
+    z-index: 1;
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 80px 40px 60px;
+    opacity: 0;
+    transform: translateY(20px);
+    transition: opacity 0.9s ease-out, transform 0.9s ease-out;
+}
+.container.visible {
+    opacity: 1;
+    transform: translateY(0);
 }
 
-header { 
-    margin-bottom: 80px; 
+/* ===== Header ===== */
+header {
+    margin-bottom: 72px;
 }
-
-h1 { 
-    font-size: 3rem; 
-    font-weight: 900; 
-    margin: 0; 
-    letter-spacing: -2px; 
-}
-
-.role { 
-    font-size: 1.1rem; 
-    color: var(--secondary); 
-    margin-top: 10px; 
-    font-weight: 400; 
-}
-
-/* --- 核心修改：强制竖向排列 --- */
-.grid {
+.header-inner {
     display: flex;
-    flex-direction: column; /* 强制竖着排 */
-    gap: 50px; /* 模块之间的垂直间距 */
+    flex-direction: column;
+    gap: 12px;
 }
 
-/* 每个模块的样式优化 */
-.grid > div {
-    border-top: 1px solid var(--line); /* 模块之间加一条很淡的横线，增加秩序感 */
-    padding-top: 25px;
+/* Glitch 标题 */
+h1.glitch {
+    font-size: clamp(2.8rem, 6vw, 4.5rem);
+    font-weight: 900;
+    letter-spacing: -3px;
+    line-height: 1;
+    position: relative;
+    display: inline-block;
+    color: var(--primary);
+}
+h1.glitch::before,
+h1.glitch::after {
+    content: attr(data-text);
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%;
+    overflow: hidden;
+}
+h1.glitch::before {
+    color: var(--accent);
+    animation: glitch-top 3.5s infinite;
+    clip-path: polygon(0 0, 100% 0, 100% 35%, 0 35%);
+}
+h1.glitch::after {
+    color: var(--accent2);
+    animation: glitch-bottom 3.5s infinite;
+    clip-path: polygon(0 65%, 100% 65%, 100% 100%, 0 100%);
+}
+@keyframes glitch-top {
+    0%, 90%, 100% { transform: translate(0); opacity: 0; }
+    92% { transform: translate(-3px, -2px); opacity: 0.8; }
+    94% { transform: translate(3px, 2px); opacity: 0.8; }
+    96% { transform: translate(-2px, 0); opacity: 0.8; }
+    98% { transform: translate(0); opacity: 0; }
+}
+@keyframes glitch-bottom {
+    0%, 90%, 100% { transform: translate(0); opacity: 0; }
+    93% { transform: translate(3px, 2px); opacity: 0.7; }
+    95% { transform: translate(-3px, -2px); opacity: 0.7; }
+    97% { transform: translate(2px, 0); opacity: 0.7; }
+    99% { transform: translate(0); opacity: 0; }
+}
+
+.role {
+    font-size: 1.05rem;
+    color: var(--secondary);
+    font-weight: 400;
+    letter-spacing: 0.5px;
+}
+
+.header-tags {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-top: 4px;
+}
+.tag {
+    font-size: 0.75rem;
+    padding: 4px 12px;
+    border-radius: 999px;
+    background: var(--card-bg);
+    border: 1px solid var(--line);
+    color: var(--secondary);
+    letter-spacing: 0.3px;
+}
+
+/* ===== Section ===== */
+.section {
+    margin-bottom: 64px;
+}
+.section-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.68rem;
+    letter-spacing: 2.5px;
+    text-transform: uppercase;
+    color: #aaa;
+    margin-bottom: 24px;
+    font-weight: 600;
+}
+.dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--accent);
+    display: inline-block;
+    animation: pulse 2s infinite;
+}
+@keyframes pulse {
+    0%, 100% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.5); opacity: 0.6; }
+}
+
+/* ===== 游戏卡片网格 ===== */
+.cards-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 16px;
+}
+
+.card {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    background: var(--card-bg);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 20px 18px;
+    text-decoration: none;
+    color: var(--primary);
+    box-shadow: var(--shadow);
+    transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+    opacity: 0;
+    transform: translateY(16px);
+    /* 动画由 JS 触发 */
+}
+.card.visible {
+    opacity: 1;
+    transform: translateY(0);
+}
+.card:hover {
+    transform: translateY(-5px) scale(1.02);
+    box-shadow: var(--shadow-hover);
+    border-color: var(--accent);
+}
+.card:hover .card-arrow {
+    transform: translateX(4px);
+    color: var(--accent);
+}
+
+.card-icon {
+    font-size: 1.8rem;
+    flex-shrink: 0;
+    width: 44px;
+    height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--bg);
+    border-radius: 10px;
+}
+.card-body {
+    flex: 1;
+    min-width: 0;
+}
+.card-body h3 {
+    font-size: 0.95rem;
+    font-weight: 700;
+    margin-bottom: 3px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.card-body p {
+    font-size: 0.78rem;
+    color: var(--secondary);
+    line-height: 1.4;
+}
+.card-arrow {
+    font-size: 1rem;
+    color: #ccc;
+    flex-shrink: 0;
+    transition: transform 0.2s ease, color 0.2s ease;
+}
+
+/* ===== About 区 ===== */
+.about-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 16px;
+}
+.about-card {
+    background: var(--card-bg);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 24px 20px;
+    box-shadow: var(--shadow);
+    transition: transform 0.25s ease, box-shadow 0.25s ease;
+    opacity: 0;
+    transform: translateY(16px);
+}
+.about-card.visible {
+    opacity: 1;
+    transform: translateY(0);
+}
+.about-card:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-hover);
 }
 
 .module-label {
-    font-size: 0.7rem;
+    font-size: 0.65rem;
     letter-spacing: 2px;
     text-transform: uppercase;
     color: #bbb;
-    margin-bottom: 12px;
+    margin-bottom: 10px;
     display: block;
+    font-weight: 600;
 }
-
 .nav-link {
-    display: inline-block; /* 改为 inline-block，让下划线只跟文字一样长 */
+    display: inline-block;
     text-decoration: none;
     color: var(--primary);
-    font-size: 1.2rem;
+    font-size: 1rem;
     font-weight: 700;
     margin-bottom: 8px;
-    transition: 0.2s;
+    transition: color 0.2s;
+}
+.nav-link:hover {
+    color: var(--accent);
+}
+.desc {
+    font-size: 0.82rem;
+    color: var(--secondary);
+    line-height: 1.6;
 }
 
-.nav-link:hover { 
-    opacity: 0.6;
-}
-
-.desc { 
-    font-size: 0.9rem; 
-    color: var(--secondary); 
-    line-height: 1.6; 
-    margin: 0;
-}
-
-footer { 
-    margin-top: 120px; 
-    font-size: 0.7rem; 
-    color: #ccc; 
+/* ===== Footer ===== */
+footer {
+    margin-top: 80px;
+    font-size: 0.68rem;
+    color: #ccc;
     letter-spacing: 1px;
+    text-align: center;
+    padding-bottom: 40px;
+}
+
+/* ===== 响应式 ===== */
+@media (max-width: 600px) {
+    .container { padding: 60px 20px 40px; }
+    .cards-grid { grid-template-columns: 1fr; }
+    .about-grid { grid-template-columns: 1fr; }
+    h1.glitch { letter-spacing: -2px; }
 }

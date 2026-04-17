@@ -4,37 +4,163 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Eve | Product Manager & Developer</title>
-    <link rel="stylesheet" href="style.css"> 
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
+    <!-- 背景粒子画布 -->
+    <canvas id="bg-canvas"></canvas>
+
     <div class="container">
         <header>
-            <h1>Eve Zhang</h1>
-            <p class="role">产品经理 / 终身学习者</p>
+            <div class="header-inner">
+                <h1 class="glitch" data-text="Eve Zhang">Eve Zhang</h1>
+                <p class="role">产品经理 · 终身学习者 · Vibe Coder</p>
+                <div class="header-tags">
+                    <span class="tag">🎮 前端游戏</span>
+                    <span class="tag">📦 产品原型</span>
+                    <span class="tag">✨ Vibe Coding</span>
+                </div>
+            </div>
         </header>
 
-        <div class="grid">
-            <div>
-                <span class="module-label">Portfolio</span>
-                <a href="https://github.com/eve-zzh?tab=repositories" class="nav-link" target="_blank">Builds & Projects →</a>
-                <p class="desc">所有技术实践与产品原型，实时同步于 GitHub 仓库</p>
+        <!-- 游戏项目区 -->
+        <section class="section">
+            <div class="section-label">
+                <span class="dot"></span>
+                PROJECTS · 前端小游戏
             </div>
 
-            <div>
-                <span class="module-label">Profile</span>
-                <a href="#" class="nav-link">Resume & Thoughts</a>
-                <p class="desc">关于我的个人经历、产品方法论以及深度思考</p>
-            </div>
+            <div class="cards-grid">
 
-            <div>
-                <span class="module-label">Connect</span>
-                <a href="mailto:你的邮箱" class="nav-link">Get in touch</a>
-                <p class="desc">欢迎业务交流或技术探讨</p>
-            </div>
-        </div>
+                <a href="word-game.html" class="card" target="_blank">
+                    <div class="card-icon">🔤</div>
+                    <div class="card-body">
+                        <h3>Word Game</h3>
+                        <p>单词闯关游戏，挑战你的词汇量</p>
+                    </div>
+                    <div class="card-arrow">→</div>
+                </a>
 
-        <footer>© 2026 EVE. ALL RIGHTS RESERVED.</footer>
+                <a href="letter-spell.html" class="card" target="_blank">
+                    <div class="card-icon">🔡</div>
+                    <div class="card-body">
+                        <h3>Letter Spell</h3>
+                        <p>字母拼写练习，提升拼写准确率</p>
+                    </div>
+                    <div class="card-arrow">→</div>
+                </a>
+
+                <a href="snake-spell.html" class="card" target="_blank">
+                    <div class="card-icon">🐍</div>
+                    <div class="card-body">
+                        <h3>Snake Spell</h3>
+                        <p>贪吃蛇 × 单词拼写，双重挑战</p>
+                    </div>
+                    <div class="card-arrow">→</div>
+                </a>
+
+                <a href="word-brick.html" class="card" target="_blank">
+                    <div class="card-icon">🧱</div>
+                    <div class="card-body">
+                        <h3>Word Brick</h3>
+                        <p>打砖块 × 单词学习，边玩边记</p>
+                    </div>
+                    <div class="card-arrow">→</div>
+                </a>
+
+                <a href="flop.html" class="card" target="_blank">
+                    <div class="card-icon">🃏</div>
+                    <div class="card-body">
+                        <h3>Flop</h3>
+                        <p>翻牌记忆游戏，训练记忆力</p>
+                    </div>
+                    <div class="card-arrow">→</div>
+                </a>
+
+                <a href="Lianliankan.html" class="card" target="_blank">
+                    <div class="card-icon">🔗</div>
+                    <div class="card-body">
+                        <h3>连连看</h3>
+                        <p>经典连连看，单词配对消除</p>
+                    </div>
+                    <div class="card-arrow">→</div>
+                </a>
+
+                <a href="word-distinction.html" class="card" target="_blank">
+                    <div class="card-icon">🔍</div>
+                    <div class="card-body">
+                        <h3>Word Distinction</h3>
+                        <p>词义辨析，精准区分近义词</p>
+                    </div>
+                    <div class="card-arrow">→</div>
+                </a>
+
+                <a href="word-judgment.html" class="card" target="_blank">
+                    <div class="card-icon">⚖️</div>
+                    <div class="card-body">
+                        <h3>Word Judgment</h3>
+                        <p>单词判断，快速反应对错</p>
+                    </div>
+                    <div class="card-arrow">→</div>
+                </a>
+
+                <a href="sentence-fill-game.html" class="card" target="_blank">
+                    <div class="card-icon">📝</div>
+                    <div class="card-body">
+                        <h3>Sentence Fill</h3>
+                        <p>句子填空，在语境中学单词</p>
+                    </div>
+                    <div class="card-arrow">→</div>
+                </a>
+
+                <a href="timed-dictation.html" class="card" target="_blank">
+                    <div class="card-icon">⏱️</div>
+                    <div class="card-body">
+                        <h3>Timed Dictation</h3>
+                        <p>限时听写，模拟真实考试场景</p>
+                    </div>
+                    <div class="card-arrow">→</div>
+                </a>
+
+                <a href="timed-dictation2.html" class="card" target="_blank">
+                    <div class="card-icon">⏱️</div>
+                    <div class="card-body">
+                        <h3>Timed Dictation II</h3>
+                        <p>听写进阶版，更多题型与难度</p>
+                    </div>
+                    <div class="card-arrow">→</div>
+                </a>
+
+            </div>
+        </section>
+
+        <!-- 关于 & 联系区 -->
+        <section class="section about-section">
+            <div class="section-label">
+                <span class="dot"></span>
+                ABOUT · 关于我
+            </div>
+            <div class="about-grid">
+                <div class="about-card">
+                    <span class="module-label">Profile</span>
+                    <a href="#" class="nav-link">Resume & Thoughts →</a>
+                    <p class="desc">关于我的个人经历、产品方法论以及深度思考</p>
+                </div>
+                <div class="about-card">
+                    <span class="module-label">Connect</span>
+                    <a href="mailto:dangezhang5@gmail.com" class="nav-link">Get in touch →</a>
+                    <p class="desc">欢迎业务交流或技术探讨</p>
+                </div>
+                <div class="about-card">
+                    <span class="module-label">GitHub</span>
+                    <a href="https://github.com/eve-zzh" class="nav-link" target="_blank">View All Projects →</a>
+                    <p class="desc">所有技术实践与产品原型，实时同步于 GitHub 仓库</p>
+                </div>
+            </div>
+        </section>
+
+        <footer>© 2026 EVE. ALL RIGHTS RESERVED. · BUILT WITH VIBE CODING ✨</footer>
     </div>
 
     <script src="script.js"></script>
