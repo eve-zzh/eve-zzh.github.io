@@ -4,7 +4,7 @@
     const ctx = canvas.getContext('2d');
     let W, H, particles;
 
-    const COLORS = ['#6c63ff', '#ff6584', '#43e97b', '#f7971e', '#4facfe'];
+    const COLORS = ['#7c6fff', '#ff6b9d', '#00c9a7', '#c8c0ff', '#ffc8de'];
 
     function resize() {
         W = canvas.width = window.innerWidth;
